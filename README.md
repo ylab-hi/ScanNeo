@@ -60,18 +60,18 @@ path/to/anaconda2/share/optitype-1.3.2-1/data/hla_reference_rna.fasta
 yara_index hla_reference_rna.fasta -o hla.index  
 ```
 By executing this command, it will generate 12 files, namely, 
-hla.index.lf.drp
-hla.index.lf.drv
-hla.index.rid.concat
-hla.index.sa.ind
-hla.index.sa.val
-hla.index.txt.limits
-hla.index.lf.drs
-hla.index.lf.pst
-hla.index.rid.limits
-hla.index.sa.len
-hla.index.txt.concat
-hla.index.txt.size
+* hla.index.lf.drp
+* hla.index.lf.drv
+* hla.index.rid.concat
+* hla.index.sa.ind
+* hla.index.sa.val
+* hla.index.txt.limits
+* hla.index.lf.drs
+* hla.index.lf.pst
+* hla.index.rid.limits
+* hla.index.sa.len
+* hla.index.txt.concat
+* hla.index.txt.size
 #### configure config.ini file
 ```
 [fasta]
