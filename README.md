@@ -23,19 +23,22 @@ conda install -c bioconda razers3
 conda install -c conda-forge glpk
 ```
 ### intall IEDB binding prediction tools
-Download the archives for [HLA class I] (http://tools.iedb.org/mhci/download/) and unpack them
+Download the archives for [HLA class I](http://tools.iedb.org/mhci/download/) and unpack them
 ```
 wget -c https://downloads.iedb.org/tools/mhci/2.19.1/IEDB_MHC_I-2.19.1.tar.gz
 tar -zxvf IEDB_MHC_I-2.19.1.tar.gz
 cd mhc_i
 ./configure
 ```
+__tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
+
+
 
 Configuration
 ----------------
 ### configure Optitype
 
-Make modification on OptiTypePipeline.py
+Make modification on __OptiTypePipeline.py__
 Change from
 ```python
 this_dir = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(os.path.realpath(__file__))))
