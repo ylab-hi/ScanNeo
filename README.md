@@ -120,7 +120,7 @@ index=/path/to/hla.index
 Usage
 -------------------------
 #### STEP 1: INDEL calling using RNA-seq data
-	```
+	```bash
 	ScanNeo.py indel -i rnaseq_bam -r hg38
 	```	
 
