@@ -25,4 +25,34 @@ conda install -c conda-forge glpk
 
 Configuration
 ----------------
-### configure Optitype
+#### configure Optitype
+
+Make modification on OptiTypePipeline.py 
+```python
+this_dir = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(os.path.realpath(__file__))))
+```
+```python
+this_dir = os.path.dirname(os.path.realpath(__file__))
+```
+
+#### configure yara
+path_to_anaconda2/share/optitype-1.3.2-1/data/hla_reference_rna.fasta
+```bash
+yara_index hla_reference_rna.fasta -o hla.index  
+```
+#### configure config.ini file
+
+[fasta]
+
+hg38=/home/tywang/database/genome/hg38.fa
+hg19=/home/tywang/database/genome/hg19.fa
+
+[annotation]
+
+hg38=/home/tywang/database/gencode/gencode.v21.annotation.gtf
+hg19=/home/tywang/database/gencode/gencode.v19.annotation.gtf
+
+[yara]
+
+index=/home/tywang/database/genome/hla.index
+
