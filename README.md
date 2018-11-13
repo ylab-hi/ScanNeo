@@ -127,9 +127,9 @@ Usage
 #### Options:
 	
 	-h, --help            show this help message and exit
-  -i INPUT, --input INPUT
+        -i INPUT, --input INPUT
                         RNA-seq alignment file (BAM)
-  -r {hg19,hg38}, --ref {hg19,hg38}
+        -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
 	
 #### Input:
@@ -157,13 +157,13 @@ Usage
 #### Options:
 	
 	-h, --help            show this help message and exit
-  -i INPUT, --input INPUT
+        -i INPUT, --input INPUT
                         input VCF file
-  -c CUTOFF, --cutoff CUTOFF
+        -c CUTOFF, --cutoff CUTOFF
                         MAF cutoff default: 0.01
-  -r {hg19,hg38}, --ref {hg19,hg38}
+        -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
-  -o OUTPUT, --output OUTPUT
+        -o OUTPUT, --output OUTPUT
                         output annotated and filtered vcf file (default:
                         output.vcf)
 	 
@@ -175,5 +175,47 @@ Usage
 	
 	output_vcf_file   			:Reported Indels with VCF format
   
-  
+#### STEP 3: neoantigen prediction
+	```
+	ScanNeo.py hla -i vep.vcf --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
+	ScanNeo.py hla -b RNA_seq.bam --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
+	```
+#### Options:
+	
+	-h, --help            show this help message and exit
+        -i VCF, --input VCF   VEP annotated and filtered VCF
+        --alleles ALLELES     Name of the allele to use for epitope prediction.
+                              Multiple alleles can be specified using a comma-
+                              separated listinput HLA class I alleles
+        -b BAM, --bam BAM     Input RNA-Seq BAM file if you don't know sample HLA
+                              class I alleles
+        -l LENGTH, --length LENGTH
+                              Length of the peptide sequence to use when creating
+                              the FASTA (default: 21)
+        --binding BINDING_THRESHOLD
+                              binding threshold ic50 (default: 500 nM)
+        -e EPITOPE_LENGTHS, --epitope-length EPITOPE_LENGTHS
+                              Length of subpeptides (neoepitopes) to predict.
+                              Multiple epitope lengths can be specified using a
+                              comma-separated list. Typical epitope lengths vary
+                              between 8-11. (default: 8,9,10,11)
+        -p PATH_TO_IEDB, --path-to-iedb PATH_TO_IEDB
+                              Directory that contains the local installation of IEDB
+                             
+        -m {lowest,median}, --metric {lowest,median}
+                             The ic50 scoring metric to use when filtering epitopes
+                              by binding-threshold lowest: Best MT Score - lowest MT
+                              ic50 binding score of all chosen prediction methods.
+                              median: Median MT Score - median MT ic50 binding score
+                              of all chosen prediction methods. (default: lowest)
+        -o OUTPUT, --output OUTPUT
+                              output text file name, name.tsv
+	 
+#### Input:
+	
+	input_bam_file   			:input BAM file is produced by transIndel_build.py
+	
+#### Output:
+	
+	output_vcf_file   			:Reported Indels with VCF format  
 
