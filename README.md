@@ -41,7 +41,7 @@ path_to_anaconda2/share/optitype-1.3.2-1/data/hla_reference_rna.fasta
 yara_index hla_reference_rna.fasta -o hla.index  
 ```
 #### configure config.ini file
-
+```
 [fasta]
 
 hg38=/home/tywang/database/genome/hg38.fa
@@ -55,4 +55,5 @@ hg19=/home/tywang/database/gencode/gencode.v19.annotation.gtf
 [yara]
 
 index=/home/tywang/database/genome/hla.index
+```
 
