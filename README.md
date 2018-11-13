@@ -120,18 +120,20 @@ index=/path/to/hla.index
 Usage
 -------------------------
 #### STEP 1: INDEL calling using RNA-seq data
-	```bash
-	ScanNeo.py indel -i rnaseq_bam -r hg38
-	```	
+```
+ScanNeo.py indel -i rnaseq_bam -r hg38
+```
 
 #### Options:
-	
-	-h, --help            show this help message and exit
+
+```	
+        -h, --help            show this help message and exit
         -i INPUT, --input INPUT
                         RNA-seq alignment file (BAM)
         -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
-	
+```
+
 #### Input:
 	
 	input_bam_file   			:input BAM file is produced by BWA-MEM and is sorted and indexed.
