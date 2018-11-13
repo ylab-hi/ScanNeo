@@ -8,9 +8,10 @@ These instructions will get you a copy of the project up and running on your loc
 
 Prerequisites
 ----------------
+You need Python 2.7 to run ScanNeo.
 
-What things you need to install the software and how to install them
-### install necessary python packages
+### install necessary python packages via anaconda
+Install [anaconda](https://www.anaconda.com/download/) firstly, then install dependent packages via conda in bioconda channel.
 ```
 conda install -c bioconda optitype
 conda install -c bioconda ensembl-vep
@@ -22,6 +23,10 @@ conda install -c bioconda yara
 conda install -c bioconda razers3
 conda install -c conda-forge glpk
 ```
+### install transIndel
+git clone https://github.com/cauyrd/transIndel 
+Put __transIndel_build_RNA.py__ and __transIndel_call.py__ in your folder in PATH.
+
 ### intall IEDB binding prediction tools
 Download the archives for [HLA class I](http://tools.iedb.org/mhci/download/) and unpack them
 ```
@@ -30,8 +35,11 @@ tar -zxvf IEDB_MHC_I-2.19.1.tar.gz
 cd mhc_i
 ./configure
 ```
+
 __tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
 
+Install them on Debian/Ubuntu/Mint Linux. ```$ sudo apt-get install csh gawk```
+Install them on CentOS/RHEL. ```# yum install tcsh gawk```
 
 
 Configuration
