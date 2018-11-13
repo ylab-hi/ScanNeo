@@ -5,7 +5,7 @@
 =head1 SYNOPSIS
 
  mv Wildtype.pm ~/.vep/Plugins
- perl variant_effect_predictor.pl -i variations.vcf --plugin Wildtype
+ ./vep -i variations.vcf --plugin Wildtype
  
 =head1 DESCRIPTION
 
