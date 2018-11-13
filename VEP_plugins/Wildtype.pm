@@ -1,11 +1,18 @@
 =head1 NAME
+
  Wildtype
+ 
 =head1 SYNOPSIS
+
  mv Wildtype.pm ~/.vep/Plugins
  perl variant_effect_predictor.pl -i variations.vcf --plugin Wildtype
+ 
 =head1 DESCRIPTION
+
  This is a plugin for the Ensembl Variant Effect Predictor (VEP) that
  provides the wildtype protein sequence of a transcript.
+ It is developed by Griffithlab (http://www.griffithlab.org)
+ 
 =cut
 
 package Wildtype;
