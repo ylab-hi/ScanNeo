@@ -24,8 +24,11 @@ conda install -c bioconda razers3
 conda install -c conda-forge glpk
 ```
 ### install transIndel
+```
 git clone https://github.com/cauyrd/transIndel 
-Put __transIndel_build_RNA.py__ and __transIndel_call.py__ in your folder in PATH.
+```
+
+Place __transIndel_build_RNA.py__ and __transIndel_call.py__ in your folder in PATH.
 
 ### intall IEDB binding prediction tools
 Download the archives for [HLA class I](http://tools.iedb.org/mhci/download/) and unpack them
@@ -95,16 +98,82 @@ By executing this command, it will generate 12 files, namely,
 ```
 [fasta]
 
+# reference genome file in FASTA format
+
 hg38=/path/to/hg38.fa
 hg19=/path/to/hg19.fa
 
 [annotation]
+
+# gene annotation file in GTF format
 
 hg38=/path/to/gencode.v21.annotation.gtf
 hg19=/path/to/gencode.v19.annotation.gtf
 
 [yara]
 
+# yara index for 
+
 index=/path/to/hla.index
 ```
+
+Usage
+-------------------------
+#### STEP 1: INDEL calling using RNA-seq data
+	```
+	ScanNeo.py indel -i rnaseq_bam -r hg38
+	```	
+
+#### Options:
+	
+	-h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        RNA-seq alignment file (BAM)
+  -r {hg19,hg38}, --ref {hg19,hg38}
+                        reference genome (default: hg38)
+	
+#### Input:
+	
+	input_bam_file   			:input BAM file is produced by BWA-MEM and is sorted and indexed.
+	reference_genome_fasta (for RNA-seq)    :reference genome in FastA format
+	gtf_file (for RNA-seq)    		:gene annotation file in GTF format
+	
+#### Output:
+	
+	your_output_bam_file			:BAM file for CIGAR string redefinement.
+	
+	transIndel generates the following optional fields in output BAMs
+
+	Tag| Meaning
+	--------------------------------------------------------------------------------------
+	OA | original representative alignment; format: (pos,CIGAR)
+	JM | splicing junction reads; infered from GTF or splicing motif (used in RNA-seq BAM)
+	
+
+#### STEP 2: indels annotation using VEP
+	```
+	ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]	
+	```
+#### Options:
+	
+	-h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        input VCF file
+  -c CUTOFF, --cutoff CUTOFF
+                        MAF cutoff default: 0.01
+  -r {hg19,hg38}, --ref {hg19,hg38}
+                        reference genome (default: hg38)
+  -o OUTPUT, --output OUTPUT
+                        output annotated and filtered vcf file (default:
+                        output.vcf)
+	 
+#### Input:
+	
+	input_bam_file   			:input BAM file is produced by transIndel_build.py
+	
+#### Output:
+	
+	output_vcf_file   			:Reported Indels with VCF format
+  
+  
 
