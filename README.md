@@ -41,8 +41,11 @@ cd mhc_i
 
 __tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
 
-Install them on Debian/Ubuntu/Mint Linux. ```$ sudo apt-get install csh gawk```
-Install them on CentOS/RHEL. ```# yum install tcsh gawk```
+Install them on Debian/Ubuntu/Mint Linux.
+```$ sudo apt-get install csh gawk```
+
+Install them on CentOS/RHEL.
+```# yum install tcsh gawk```
 
 
 Configuration
@@ -136,22 +139,15 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 
 #### Input:
 ```	
-input_bam_file   			:input BAM file is produced by BWA-MEM and is sorted and indexed.
-reference_genome_fasta (for RNA-seq)    :reference genome in FastA format
-gtf_file (for RNA-seq)    		:gene annotation file in GTF format
+input_bam_file      :input RNA-seq BAM file. (e.g., rna-seq.bam)
+reference_genome    :specify reference genome (hg19 or hg38)
 ```
 
 #### Output:
 ```
 	
-	your_output_bam_file			:BAM file for CIGAR string redefinement.
-	
-	transIndel generates the following optional fields in output BAMs
-
-	Tag| Meaning
-	--------------------------------------------------------------------------------------
-	OA | original representative alignment; format: (pos,CIGAR)
-	JM | splicing junction reads; infered from GTF or splicing motif (used in RNA-seq BAM)
+	your_output_bam_file		:BAM file for CIGAR string redefinement. (rna-seq.indel.bam)
+	vcf_file			:VCF file with INDELs in it. (rna-seq.indel.vcf)
 ```
 
 #### STEP 2: indels annotation using VEP
