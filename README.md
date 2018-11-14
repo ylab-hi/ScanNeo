@@ -127,20 +127,22 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 #### Options:
 
 ```	
-        -h, --help            show this help message and exit
-        -i INPUT, --input INPUT
+-h, --help            show this help message and exit
+-i INPUT, --input INPUT
                         RNA-seq alignment file (BAM)
-        -r {hg19,hg38}, --ref {hg19,hg38}
+-r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
 ```
 
 #### Input:
-	
-	input_bam_file   			:input BAM file is produced by BWA-MEM and is sorted and indexed.
-	reference_genome_fasta (for RNA-seq)    :reference genome in FastA format
-	gtf_file (for RNA-seq)    		:gene annotation file in GTF format
-	
+```	
+input_bam_file   			:input BAM file is produced by BWA-MEM and is sorted and indexed.
+reference_genome_fasta (for RNA-seq)    :reference genome in FastA format
+gtf_file (for RNA-seq)    		:gene annotation file in GTF format
+```
+
 #### Output:
+```
 	
 	your_output_bam_file			:BAM file for CIGAR string redefinement.
 	
@@ -150,25 +152,27 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 	--------------------------------------------------------------------------------------
 	OA | original representative alignment; format: (pos,CIGAR)
 	JM | splicing junction reads; infered from GTF or splicing motif (used in RNA-seq BAM)
-	
+```
 
 #### STEP 2: indels annotation using VEP
-	```
-	ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]	
-	```
+```
+ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]	
+```
+
 #### Options:
-	
-	-h, --help            show this help message and exit
-        -i INPUT, --input INPUT
+```
+-h, --help            show this help message and exit
+-i INPUT, --input INPUT
                         input VCF file
-        -c CUTOFF, --cutoff CUTOFF
+-c CUTOFF, --cutoff CUTOFF
                         MAF cutoff default: 0.01
-        -r {hg19,hg38}, --ref {hg19,hg38}
+-r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
-        -o OUTPUT, --output OUTPUT
+-o OUTPUT, --output OUTPUT
                         output annotated and filtered vcf file (default:
                         output.vcf)
-	 
+```
+
 #### Input:
 	
 	input_bam_file   			:input BAM file is produced by transIndel_build.py
@@ -178,41 +182,42 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 	output_vcf_file   			:Reported Indels with VCF format
   
 #### STEP 3: neoantigen prediction
-	```
-	ScanNeo.py hla -i vep.vcf --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
-	ScanNeo.py hla -b RNA_seq.bam --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
-	```
+```
+ScanNeo.py hla -i vep.vcf --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
+ScanNeo.py hla -b RNA_seq.bam --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
+```
+
 #### Options:
-	
-	-h, --help            show this help message and exit
-        -i VCF, --input VCF   VEP annotated and filtered VCF
-        --alleles ALLELES     Name of the allele to use for epitope prediction.
-                              Multiple alleles can be specified using a comma-
-                              separated listinput HLA class I alleles
-        -b BAM, --bam BAM     Input RNA-Seq BAM file if you don't know sample HLA
-                              class I alleles
-        -l LENGTH, --length LENGTH
-                              Length of the peptide sequence to use when creating
-                              the FASTA (default: 21)
-        --binding BINDING_THRESHOLD
-                              binding threshold ic50 (default: 500 nM)
-        -e EPITOPE_LENGTHS, --epitope-length EPITOPE_LENGTHS
-                              Length of subpeptides (neoepitopes) to predict.
-                              Multiple epitope lengths can be specified using a
-                              comma-separated list. Typical epitope lengths vary
-                              between 8-11. (default: 8,9,10,11)
-        -p PATH_TO_IEDB, --path-to-iedb PATH_TO_IEDB
-                              Directory that contains the local installation of IEDB
+```
+-h, --help            show this help message and exit
+-i VCF, --input VCF   VEP annotated and filtered VCF
+--alleles ALLELES     Name of the allele to use for epitope prediction.
+                          Multiple alleles can be specified using a comma-
+                          separated listinput HLA class I alleles
+-b BAM, --bam BAM     Input RNA-Seq BAM file if you don't know sample HLA class I alleles
+-l LENGTH, --length LENGTH
+                         Length of the peptide sequence to use when creating
+                         the FASTA (default: 21)
+--binding BINDING_THRESHOLD
+                         binding threshold ic50 (default: 500 nM)
+-e EPITOPE_LENGTHS, --epitope-length EPITOPE_LENGTHS
+                         Length of subpeptides (neoepitopes) to predict.
+                         Multiple epitope lengths can be specified using a
+                         comma-separated list. Typical epitope lengths vary
+                         between 8-11. (default: 8,9,10,11)
+-p PATH_TO_IEDB, --path-to-iedb PATH_TO_IEDB
+                         Directory that contains the local installation of IEDB
                              
-        -m {lowest,median}, --metric {lowest,median}
-                             The ic50 scoring metric to use when filtering epitopes
-                              by binding-threshold lowest: Best MT Score - lowest MT
-                              ic50 binding score of all chosen prediction methods.
-                              median: Median MT Score - median MT ic50 binding score
-                              of all chosen prediction methods. (default: lowest)
-        -o OUTPUT, --output OUTPUT
-                              output text file name, name.tsv
-	 
+-m {lowest,median}, --metric {lowest,median}
+                        The ic50 scoring metric to use when filtering epitopes
+                        by binding-threshold lowest: Best MT Score - lowest MT
+                        ic50 binding score of all chosen prediction methods.
+                        median: Median MT Score - median MT ic50 binding score
+                        of all chosen prediction methods. (default: lowest)
+-o OUTPUT, --output OUTPUT
+                       output text file name, name.tsv
+```
+
 #### Input:
 	
 	input_bam_file   			:input BAM file is produced by transIndel_build.py
