@@ -240,7 +240,7 @@ __Report Columns__
 |Start       | The start position of this variant in the zero-based, half-open coordinate system |
 |Stop	     | The stop position of this variant in the zero-based, half-open coordinate system |
 |Reference   | The reference allele |
-|Variant     | The alt allele |
+|Variant     | The alternate allele |
 |Transcript  | The Ensembl ID of the affected transcript |
 |Ensembl Gene ID |	The Ensembl ID of the affected gene |
 |Variant Type |	The type of variant. missense for missense mutations, inframe_ins for inframe insertions, inframe_del for inframe deletions, and FS for frameshift variants |
