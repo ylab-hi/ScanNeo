@@ -230,8 +230,10 @@ ScanNeo.py hla -b RNA_seq.bam --alleles allele1,allele2 -e 8,9 -o output.tsv [op
 
 #### Output:
 
-```<sample>.tsv file contains neoantigen prediction results
 ```
+name.tsv file contains neoantigen prediction results
+```
+
 __Report Columns__
 
 |Column Name | Description |
