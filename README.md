@@ -193,8 +193,8 @@ output_annotated_vcf_file   			:VEP annotated Indels with VCF format
 
 #### STEP 3: neoantigen prediction
 ```
-ScanNeo.py hla -i vep.vcf --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
-ScanNeo.py hla -b RNA_seq.bam --alleles allele1,allele2 -e 8,9 -o output.tsv [options]
+ScanNeo.py hla -i vep.vcf --alleles HLA-A*02:01,HLA-B*08:01,HLA-C*03:03 -e 8,9 -o output.tsv [options]
+ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
 ```
 
 #### Options:
@@ -202,8 +202,8 @@ ScanNeo.py hla -b RNA_seq.bam --alleles allele1,allele2 -e 8,9 -o output.tsv [op
 -h, --help            show this help message and exit
 -i VCF, --input VCF   VEP annotated and filtered VCF
 --alleles ALLELES     Name of the allele to use for epitope prediction.
-                          Multiple alleles can be specified using a comma-
-                          separated listinput HLA class I alleles
+                        Multiple alleles can be specified using a comma-
+                        separated listinput HLA class I alleles
 -b BAM, --bam BAM     Input RNA-Seq BAM file if you don't know sample HLA class I alleles
 -l LENGTH, --length LENGTH
                          Length of the peptide sequence to use when creating
