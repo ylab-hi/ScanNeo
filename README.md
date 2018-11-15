@@ -257,7 +257,6 @@ __Report Columns__
 |Best MT Score        | Lowest ic50 binding affinity of all prediction algorithms used | 
 |Corresponding WT Score | ic50 binding affinity of the wildtype epitope. NA if there is no WT Epitope Seq.|
 |Corresponding Fold Change | Corresponding WT Score / Best MT Score. NA if there is no WT Epitope Seq.|
- annotation.|
 |Median MT Score | Median ic50 binding affinity of the mutant epitope of all prediction algorithms used |
 |Median WT Score | Median ic50 binding affinity of the wildtype epitope of all prediction algorithms used. NA if there is no WT Epitope Seq. |
 |Median Fold Change | Median WT Score / Median MT Score. NA if there is no WT Epitope Seq. |
