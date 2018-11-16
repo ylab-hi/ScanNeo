@@ -42,7 +42,7 @@ cd mhc_i
 __tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
 
 Install them on Debian/Ubuntu/Mint Linux.
-```$ sudo apt-get install csh gawk```
+```$ sudo apt-get install tcsh gawk```
 
 Install them on CentOS/RHEL.
 ```# yum install tcsh gawk```
