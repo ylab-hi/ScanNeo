@@ -264,3 +264,10 @@ __Report Columns__
 |Median Fold Change | Median WT Score / Median MT Score. NA if there is no WT Epitope Seq. |
 |Individual Prediction Algorithm WT and MT Scores (multiple) | ic50 scores for the MT Epitope Seq and WT Eptiope Seq for the individual prediction algorithms used |
 
+License
+----------------
+This project is licensed under <a href="http://opensource.org/licenses/NPOSL-3.0">NPOSL-3.0</a>.
+
+Contact
+-----------------
+Bug reports or feature requests can be submitted on the <a href="https://github.com/ylab-hi/ScanNeo/issues">ScanNeo Github page</a>.
