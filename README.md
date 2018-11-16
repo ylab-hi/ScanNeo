@@ -214,7 +214,7 @@ ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
                          Length of subpeptides (neoepitopes) to predict.
                          Multiple epitope lengths can be specified using a
                          comma-separated list. Typical epitope lengths vary
-                         between 8-11. (default: 8,9,10,11)
+                         between 8-11. (default: 8,9)
 -p PATH_TO_IEDB, --path-to-iedb PATH_TO_IEDB
                          Directory that contains the local installation of IEDB
                              
