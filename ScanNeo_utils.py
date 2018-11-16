@@ -14,6 +14,7 @@ import subprocess
 import os
 import tempfile
 import shutil
+from Bio.Seq import translate
 try:
     import configparser
 except ImportError:
@@ -32,33 +33,6 @@ def config_getter():
     yara_index = config.get("yara", "index")
     return {'hg38_ref': hg38_ref, 'hg19_ref': hg19_ref,'hg38_anno':hg38_anno, 'hg19_anno':hg19_anno, 'yara_index':yara_index}
 
-
-
-
-
-
-def parse_bam_readcount_file(bam_readcount_file):
-    coverage_tsv_reader = csv.reader(bam_readcount_file, delimiter='\t')
-    coverage = {}
-    for row in coverage_tsv_reader:
-        chromosome     = row[0]
-        position       = row[1]
-        reference_base = row[2].upper()
-        depth          = row[3]
-        brct           = row[4:]
-        if chromosome not in coverage:
-            coverage[chromosome] = {}
-        if position not in coverage[chromosome]:
-            coverage[chromosome][position] = {}
-        coverage[chromosome][position][reference_base] = brct
-    return coverage
-
-def parse_brct_field(brct_entry):
-    parsed_brct = {}
-    for brct in brct_entry:
-        (base, count, rest) = brct.split(':', 2)
-        parsed_brct[base.upper()] = count
-    return parsed_brct
 
 def is_insertion(ref, alt):
     return len(alt) > len(ref)
@@ -291,7 +265,7 @@ def determine_flanking_sequence_length(full_wildtype_sequence_length, peptide_se
 
 def get_wildtype_subsequence(position, full_wildtype_sequence, wildtype_amino_acid_length, peptide_sequence_length, line):
     one_flanking_sequence_length = int(determine_flanking_sequence_length(len(full_wildtype_sequence), peptide_sequence_length, line))
-    peptide_sequence_length = 2 * one_flanking_sequence_length + wildtype_amino_acid_length
+    peptide_sequence_length = min( 2 * one_flanking_sequence_length + wildtype_amino_acid_length, len(full_wildtype_sequence))
 
     # We want to extract a subset from full_wildtype_sequence that is
     # peptide_sequence_length long so that the position ends
@@ -326,7 +300,22 @@ def get_frameshift_subsequences(position, full_wildtype_sequence, peptide_sequen
     mutation_subsequence_stop_position = int(position)
     wildtype_subsequence = full_wildtype_sequence[start_position:wildtype_subsequence_stop_position]
     mutation_start_subsequence = full_wildtype_sequence[start_position:mutation_subsequence_stop_position]
-    return wildtype_subsequence, mutation_start_subsequence
+    return start_position, wildtype_subsequence, mutation_start_subsequence
+
+
+def combine_conflicting_variants(codon_changes):
+    codon = list(codon_changes[0].split('/')[0].lower())
+    modified_positions = []
+    for codon_change in codon_changes:
+        (old_codon, new_codon) = codon_change.split('/')
+        change_positions = [i for i in range(len(old_codon)) if old_codon[i] != new_codon[i]]
+        for position in change_positions:
+            if position in modified_positions:
+                print("Warning: position has already been modified")
+            codon[position] = new_codon[position].lower()
+            modified_positions.append(position)
+    return translate("".join(codon))
+
 
 def generate_fasta(args_input = sys.argv[1:]):
     parser = argparse.ArgumentParser('generate_fasta')
@@ -337,7 +326,7 @@ def generate_fasta(args_input = sys.argv[1:]):
     parser.add_argument('output_key_file', type=argparse.FileType('w'), help='output FASTA key file')
     parser.add_argument('downstream_sequence_length', type=int, help="Cap to limit the downstream sequence length for frameshifts when creating the fasta file.")
     args = parser.parse_args(args_input)
-    #print(args)
+
     peptide_sequence_length = args.peptide_sequence_length
     tsvin                   = csv.DictReader(args.input_file, delimiter='\t')
     fasta_sequences         = OrderedDict()
@@ -351,6 +340,20 @@ def generate_fasta(args_input = sys.argv[1:]):
                 position = int(line['protein_position'].split('-', 1)[0]) - 1
         elif variant_type == 'missense' or variant_type == 'inframe_ins':
             wildtype_amino_acid, mutant_amino_acid = line['amino_acid_change'].split('/')
+            # deal with stop codon
+            if '*' in wildtype_amino_acid:
+                wildtype_amino_acid = wildtype_amino_acid.split('*')[0]
+            elif 'X' in wildtype_amino_acid:
+                wildtype_amino_acid = wildtype_amino_acid.split('X')[0]
+            if '*' in mutant_amino_acid:
+                mutant_amino_acid = mutant_amino_acid.split('*')[0]
+                stop_codon_added = True
+            elif 'X' in mutant_amino_acid:
+                mutant_amino_acid = mutant_amino_acid.split('X')[0]
+                stop_codon_added = True
+            else:
+                stop_codon_added = False
+
             if wildtype_amino_acid == '-':
                 position = int(line['protein_position'].split('-', 1)[0])
                 wildtype_amino_acid_length = 0
@@ -364,6 +367,20 @@ def generate_fasta(args_input = sys.argv[1:]):
         elif variant_type == 'inframe_del':
             variant_type = 'inframe_del'
             wildtype_amino_acid, mutant_amino_acid = line['amino_acid_change'].split('/')
+            # deal with stop codon
+            if '*' in wildtype_amino_acid:
+                wildtype_amino_acid = wildtype_amino_acid.split('*')[0]
+            elif 'X' in wildtype_amino_acid:
+                wildtype_amino_acid = wildtype_amino_acid.split('X')[0]
+            if '*' in mutant_amino_acid:
+                mutant_amino_acid = mutant_amino_acid.split('*')[0]
+                stop_codon_added = True
+            elif 'X' in mutant_amino_acid:
+                mutant_amino_acid = mutant_amino_acid.split('X')[0]
+                stop_codon_added = True
+            else:
+                stop_codon_added = False
+
             position = int(line['protein_position'].split('-', 1)[0]) - 1
             wildtype_amino_acid_length = len(wildtype_amino_acid)
             if mutant_amino_acid == '-':
@@ -375,7 +392,7 @@ def generate_fasta(args_input = sys.argv[1:]):
             continue
 
         if variant_type == 'frameshift':
-            wildtype_subsequence, mutant_subsequence = get_frameshift_subsequences(position, full_wildtype_sequence, peptide_sequence_length, line)
+            mutation_start_position, wildtype_subsequence, mutant_subsequence = get_frameshift_subsequences(position, full_wildtype_sequence, peptide_sequence_length, line)
             downstream_sequence = line['downstream_amino_acid_sequence']
 
             if args.downstream_sequence_length != 0 and len(downstream_sequence) > args.downstream_sequence_length:
@@ -385,14 +402,28 @@ def generate_fasta(args_input = sys.argv[1:]):
             mutation_start_position, wildtype_subsequence = get_wildtype_subsequence(position, full_wildtype_sequence, wildtype_amino_acid_length, peptide_sequence_length, line)
             mutation_end_position = mutation_start_position + wildtype_amino_acid_length
             if wildtype_amino_acid != '-' and wildtype_amino_acid != wildtype_subsequence[mutation_start_position:mutation_end_position]:
-                #sys.exit("ERROR: There was a mismatch between the actual wildtype amino acid and the expected amino acid. Did you use the same reference build version for VEP that you used for creating the VCF?\n%s" % line)
-                pass
-            mutant_subsequence = wildtype_subsequence[:mutation_start_position] + mutant_amino_acid + wildtype_subsequence[mutation_end_position:]
+                if line['amino_acid_change'].split('/')[0].count('*') > 1:
+                    print("Warning: Amino acid change is not sane - contains multiple stops. Skipping entry {}".format(line['index']))
+                    continue
+                else:
+                    sys.exit("ERROR: There was a mismatch between the actual wildtype amino acid and the expected amino acid. Did you use the same reference build version for VEP that you used for creating the VCF?\n%s" % line)
+            if stop_codon_added:
+                mutant_subsequence = wildtype_subsequence[:mutation_start_position] + mutant_amino_acid
+            else:
+                mutant_subsequence = wildtype_subsequence[:mutation_start_position] + mutant_amino_acid + wildtype_subsequence[mutation_end_position:]
 
         if '*' in wildtype_subsequence or '*' in mutant_subsequence:
             continue
 
         if 'X' in wildtype_subsequence or 'X' in mutant_subsequence:
+            continue
+        
+        if 'U' in wildtype_subsequence or 'U' in mutant_subsequence:
+            print("Warning. Sequence contains unsupported amino acid U. Skipping entry {}".format(line['index']))
+            continue
+
+        if mutant_subsequence in wildtype_subsequence:
+            # This is not a novel peptide
             continue
 
         if len(wildtype_subsequence) < args.epitope_length or len(mutant_subsequence) < args.epitope_length:
@@ -528,6 +559,7 @@ def match_wildtype_and_mutant_entry_for_frameshift(result, mt_position, wt_resul
             result['wt_epitope_seq'] = 'NA'
             result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
         mutation_position = find_mutation_position(wt_epitope_seq, mt_epitope_seq)
+        #print('mu_pos', mutation_position)
         if mutation_position == 1 and int(previous_result['mutation_position']) <= 1:
             #The true mutation position is to the left of the current MT eptiope
             mutation_position = 0
@@ -634,28 +666,37 @@ def match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_re
         result['wt_epitope_position'] = best_match_position
 
 def match_wildtype_and_mutant_entries(iedb_results, wt_iedb_results):
+    new_iedb_results = {}
+
     for key in sorted(iedb_results.keys(), key = lambda x: int(x.split('|')[-1])):
         result = iedb_results[key]
         (wt_iedb_result_key, mt_position) = key.split('|', 1)
+
         previous_mt_position = str(int(mt_position)-1)
         previous_key = '|'.join([wt_iedb_result_key, previous_mt_position])
+
         if previous_key in iedb_results:
             previous_result = iedb_results[previous_key]
         else:
             previous_result = None
         wt_results = wt_iedb_results[wt_iedb_result_key]
+
         if result['variant_type'] == 'missense':
             match_wildtype_and_mutant_entry_for_missense(result, mt_position, wt_results, previous_result)
         elif result['variant_type'] == 'frameshift':
-             match_wildtype_and_mutant_entry_for_frameshift(result, mt_position, wt_results, previous_result)
+            match_wildtype_and_mutant_entry_for_frameshift(result, mt_position, wt_results, previous_result)
         elif result['variant_type'] == 'inframe_ins' or result['variant_type'] == 'inframe_del':
             iedb_results_for_wt_iedb_result_key = dict([(key,value) for key, value in iedb_results.items() if key.startswith(wt_iedb_result_key)])
             match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_results, previous_result, iedb_results_for_wt_iedb_result_key)
 
-    return iedb_results
+        mt_scores = result['mt_scores']
+        if min(mt_scores.values()) < 1000.0:
+            new_iedb_results[key] = result
+    return new_iedb_results
 
 def parse_iedb_file(input_iedb_files, tsv_entries, key_file):
     protein_identifiers_from_label = yaml.load(key_file)
+    #print(protein_identifiers_from_label)
     iedb_results = {}
     wt_iedb_results = {}
     for input_iedb_file in input_iedb_files:
@@ -680,20 +721,21 @@ def parse_iedb_file(input_iedb_files, tsv_entries, key_file):
             for protein_identifier in protein_identifiers:
                 (protein_type, tsv_index) = protein_identifier.split('.', 1)
                 if protein_type == 'MT':
-                    tsv_entry = tsv_entries[tsv_index]
-                    key = "%s|%s" % (tsv_index, position)
-                    if key not in iedb_results:
-                        iedb_results[key] = {}
-                        iedb_results[key]['mt_scores']         = {}
-                        iedb_results[key]['mt_epitope_seq']    = epitope
-                        iedb_results[key]['gene_name']         = tsv_entry['gene_name']
-                        iedb_results[key]['amino_acid_change'] = tsv_entry['amino_acid_change']
-                        iedb_results[key]['variant_type']      = tsv_entry['variant_type']
-                        iedb_results[key]['position']          = position
-                        iedb_results[key]['tsv_index']         = tsv_index
-                        iedb_results[key]['allele']            = allele
-                        iedb_results[key]['peptide_length']    = peptide_length
-                    iedb_results[key]['mt_scores'][method] = float(score)
+                    if float(score) > 0.0:
+                        tsv_entry = tsv_entries[tsv_index]
+                        key = "%s|%s" % (tsv_index, position)
+                        if key not in iedb_results:
+                            iedb_results[key] = {}
+                            iedb_results[key]['mt_scores']         = {}
+                            iedb_results[key]['mt_epitope_seq']    = epitope
+                            iedb_results[key]['gene_name']         = tsv_entry['gene_name']
+                            iedb_results[key]['amino_acid_change'] = tsv_entry['amino_acid_change']
+                            iedb_results[key]['variant_type']      = tsv_entry['variant_type']
+                            iedb_results[key]['position']          = position
+                            iedb_results[key]['tsv_index']         = tsv_index
+                            iedb_results[key]['allele']            = allele
+                            iedb_results[key]['peptide_length']    = peptide_length
+                        iedb_results[key]['mt_scores'][method] = float(score)
 
                 if protein_type == 'WT':
                     if tsv_index not in wt_iedb_results:
@@ -784,8 +826,11 @@ def process_input_iedb_file(input_iedb_files, tsv_entries, key_file, top_result_
 
     return flattened_iedb_results
 
-def base_headers():
-    return[
+
+def output_headers(methods):
+    # addtional headers  
+    method_dict = {'ann':'NetMHC', 'netmhcpan':'NetMHCpan', 'smm':'SMM', 'pickpocket':'PickPocket'}
+    headers = [
         'Chromosome',
         'Start',
         'Stop',
@@ -807,23 +852,11 @@ def base_headers():
         'Best MT Score',
         'Corresponding WT Score',
         'Corresponding Fold Change',
-        #'Tumor DNA Depth',
-        #'Tumor DNA VAF',
-        #'Tumor RNA Depth',
-        #'Tumor RNA VAF',
-        #'Normal Depth',
-        #'Normal VAF',
-        #'Gene Expression',
-        #'Transcript Expression',
         'Median MT Score',
         'Median WT Score',
         'Median Fold Change',
     ]
 
-def output_headers(methods):
-    # TODO 
-    method_dict = {'ann':'NetMHC', 'netmhcpan':'NetMHCpan', 'smm':'SMM', 'pickpocket':'PickPocket'}
-    headers = base_headers()
     for method in methods:
         pretty_method = method_dict[method]
         headers.append("%s WT Score" % pretty_method)
@@ -865,7 +898,10 @@ def parse_output(args_input = sys.argv[1:]):
     tsv_writer.writeheader()
 
     tsv_entries  = parse_input_tsv_file(args.input_tsv_file)
+
+    #iedb_result   = parse_iedb_file(args.input_iedb_files, tsv_entries, args.key_file)
     iedb_results = process_input_iedb_file(args.input_iedb_files, tsv_entries, args.key_file, args.top_result_per_mutation, args.top_score_metric)
+
     # TODO
     method_dict = {'ann':'NetMHC', 'netmhcpan':'NetMHCpan', 'smm':'SMM', 'pickpocket':'PickPocket'}
     for (
@@ -1523,9 +1559,6 @@ def combine_parsed_outputs(infile_list, outfile, top_score_metric, binding_cutof
 
 
 if __name__ == '__main__':
-    #generate_fasta()
-    #convert_vcf(['rna.vep.vcf','X.out'])
-    #OptiType_wrapper('TCGA-CH-5788.bam')
-    OptiType_wrapper(sys.argv[1])
-    #fastq_modifier('./3.fq')
-    #print(config_getter())
+    result = OptiType_wrapper(sys.argv[1])
+    alleles = optitype_parser(result)
+    print(alleles)
