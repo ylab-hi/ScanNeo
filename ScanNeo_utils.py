@@ -406,7 +406,8 @@ def generate_fasta(args_input = sys.argv[1:]):
                     print("Warning: Amino acid change is not sane - contains multiple stops. Skipping entry {}".format(line['index']))
                     continue
                 else:
-                    sys.exit("ERROR: There was a mismatch between the actual wildtype amino acid and the expected amino acid. Did you use the same reference build version for VEP that you used for creating the VCF?\n%s" % line)
+                    print("Warning: There was a mismatch between the actual wildtype amino acid and the expected amino acid. Did you use the same reference build version for VEP that you used for creating the VCF?\n%s" % line)
+                    continue
             if stop_codon_added:
                 mutant_subsequence = wildtype_subsequence[:mutation_start_position] + mutant_amino_acid
             else:
