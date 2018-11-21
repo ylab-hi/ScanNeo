@@ -51,7 +51,7 @@ chrms_dict = {'1':'chr1', '2':'chr2', '3':'chr3', '4':'chr4', '5':'chr5',
 
 def external_tool_checking():
     """checking dependencies are installed"""
-    software = ['vep', 'sambamba', 'bedtools', 'bwa','transIndel_build_RNA.py','transIndel_call.py']
+    software = ['picard', 'vep', 'sambamba', 'bedtools', 'bwa','transIndel_build_RNA.py','transIndel_call.py']
     cmd = "which"
     for each in software:
         try:
@@ -98,23 +98,27 @@ def preprocessing(in_bam, ref='hg38', config=config):
     elif ref =='hg19':
         fasta = config['hg19_ref']
 
-    bam_filtering = 'sambamba sort -n -p -t 4 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/)" {0} -o {1}.sorted.bam'.format(in_bam, name)
+    duplication_remover = 'picard MarkDuplicates I={0} O={1}.rmdup.bam M={1}.marked_dup_metrics.txt REMOVE_DUPLICATES=true CREATE_INDEX=true VALIDATION_STRINGENCY=LENIENT'.format(in_bam, name)
+    bam_filtering = 'sambamba sort -n -p -t 4 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/)" {0}.rmdup.bam -o {0}.sorted.bam'.format(name)
     bam2fastq     = 'bedtools bamtofastq -i {0}.sorted.bam -fq {0}.fq'.format(name)
 
     bwa_mapping   = 'bwa mem -M -t 8 {0} {1}.fq | sambamba view -S -f bam /dev/stdin | sambamba sort -t 10 -o {1}.bwa.bam /dev/stdin'.format(fasta, name)
     index_bam     = 'sambamba index {}.bwa.bam'.format(name)
     
     flag = False
-    ret1 = run_cmd(bam_filtering, 'Step1: splicing reads filtering finished!')
-    if ret1:
-        ret2 = run_cmd(bam2fastq, 'Step2: FASTQ file generated!')
-        if ret2:
-            ret3 = run_cmd(bwa_mapping, 'Step3: BWA-MEM mapping finished!')
-            if ret3:
-                run_cmd(index_bam, 'Step4: Indexing BWA BAM finished!')
-                flag = True
+    ret0 = run_cmd(duplication_remover, 'Step0: duplicated reads removal!')
+    if ret0:
+        ret1 = run_cmd(bam_filtering, 'Step1: splicing reads filtering finished!')
+        if ret1:
+            ret2 = run_cmd(bam2fastq, 'Step2: FASTQ file generated!')
+            if ret2:
+                ret3 = run_cmd(bwa_mapping, 'Step3: BWA-MEM mapping finished!')
+                if ret3:
+                    run_cmd(index_bam, 'Step4: Indexing BWA BAM finished!')
+                    flag = True
 
     os.remove('{}.fq'.format(name))
+    os.remove('{}.rmdup.bam'.format(name))
     os.remove('{}.sorted.bam'.format(name))
     return '{}.bwa.bam'.format(name)
 
@@ -425,7 +429,8 @@ def parse_args():
     hla_parser.add_argument('-b', '--bam', action='store', dest='bam', help="Input RNA-Seq BAM file if you don't know sample HLA class I alleles" )
     hla_parser.add_argument('-l', '--length', action='store', dest='length', type=int, default=21, help="Length of the peptide sequence to use when creating the FASTA (default: %(default)s)")
     hla_parser.add_argument('--binding', action='store', dest='binding_threshold', type=int, default=500, help="binding threshold ic50 (default: %(default)s nM)")
-    hla_parser.add_argument('-e','--epitope-length', action='store', dest='epitope_lengths', help="Length of subpeptides (neoepitopes) to predict. Multiple epitope lengths can be specified using a comma-separated list. Typical epitope lengths vary between 8-11. (default: %(default)s)", default='8,9')
+    hla_parser.add_argument('-e','--epitope-length', action='store', dest='epitope_lengths', help="Length of subpeptides (neoepitopes) to predict. Multiple epitope lengths can be specified using a comma-separated list. Typical epitope lengths vary between 8-11. (default: %(default)s)", default='8,9,10,11')
+    #hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB (default: %(default)s)", default='/home/tywang/bin/packages/iedb', required=True)
     hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB", required=True)
     hla_parser.add_argument('-m', '--metric', action='store', dest='metric', choices=['lowest','median'], default='lowest', help="The ic50 scoring metric to use when filtering epitopes by binding-threshold lowest: Best MT Score - lowest MT ic50 binding score of all chosen prediction methods. median: Median MT Score - median MT ic50 binding score of all chosen prediction methods. (default: %(default)s)" )
     hla_parser.add_argument('-o', '--output', action='store', dest='output', help="output text file name, name.tsv")
