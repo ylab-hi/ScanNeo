@@ -1,6 +1,6 @@
 Introduction
 ------------
-a pipeline for personalized neoantigen discovery using RNA-seq data
+A pipeline for identifying indel derived neoantigens using RNA-Seq data
 
 Getting Started
 ----------------
@@ -11,7 +11,7 @@ Prerequisites
 You need Python 2.7 to run ScanNeo.
 
 ### install necessary python packages via anaconda
-Install [anaconda](https://www.anaconda.com/download/) firstly, then install dependent packages via conda in bioconda channel.
+Install [anaconda](https://www.anaconda.com/download/) (python 2.7) firstly, then install dependent packages via conda in bioconda channel.
 ```
 conda install -c bioconda optitype
 conda install -c bioconda ensembl-vep
@@ -22,6 +22,11 @@ conda install -c bioconda bwa
 conda install -c bioconda yara
 conda install -c bioconda razers3
 conda install -c conda-forge glpk
+conda install -c bioconda pyfaidx
+conda install -c bioconda biopython
+conda install -c anaconda futures
+conda install -c bioconda pyvcf
+conda install -c anaconda pathlib2
 ```
 ### install transIndel
 ```
