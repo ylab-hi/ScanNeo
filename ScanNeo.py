@@ -283,13 +283,7 @@ def iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
 
     cmd = '{} {} {} {} {}'.format(iedb_mhc_i_executable, method, allele, epitope_length, fasta)
     response = subprocess.check_output(cmd, shell=True)
-    #iedb_result = StringIO(response)
-    #out_file.write(iedb_result.readline())
-    #for line in iedb_result:
-    #    tmp_l = line.rstrip('\n').split('\t')
-    #    ic50  = float(tmp_l[-2])
-    #    if ic50 <= binding_cutoff:
-    #        out_file.write(line)
+
     out_file.write(response)
     out_file.close()
     status_message('Complete running IEDB on Allele {} and Epitope Length {} with Method {}'.format(allele, epitope_length, methods[method]))
@@ -404,7 +398,6 @@ def reference_proteome_filter(in_file):
     pass
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description="ScanNeo pipeline: neoantigen identification using RNA-seq data")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.1')
@@ -430,7 +423,6 @@ def parse_args():
     hla_parser.add_argument('-l', '--length', action='store', dest='length', type=int, default=21, help="Length of the peptide sequence to use when creating the FASTA (default: %(default)s)")
     hla_parser.add_argument('--binding', action='store', dest='binding_threshold', type=int, default=500, help="binding threshold ic50 (default: %(default)s nM)")
     hla_parser.add_argument('-e','--epitope-length', action='store', dest='epitope_lengths', help="Length of subpeptides (neoepitopes) to predict. Multiple epitope lengths can be specified using a comma-separated list. Typical epitope lengths vary between 8-11. (default: %(default)s)", default='8,9,10,11')
-    #hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB (default: %(default)s)", default='/home/tywang/bin/packages/iedb', required=True)
     hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB", required=True)
     hla_parser.add_argument('-m', '--metric', action='store', dest='metric', choices=['lowest','median'], default='lowest', help="The ic50 scoring metric to use when filtering epitopes by binding-threshold lowest: Best MT Score - lowest MT ic50 binding score of all chosen prediction methods. median: Median MT Score - median MT ic50 binding score of all chosen prediction methods. (default: %(default)s)" )
     hla_parser.add_argument('-o', '--output', action='store', dest='output', help="output text file name, name.tsv")
