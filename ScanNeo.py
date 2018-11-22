@@ -63,6 +63,10 @@ def external_tool_checking():
             sys.exit(0)
         print("Checking for '" + each + "': found " + path)
 
+def remove(infile):
+    if os.path.isfile(infile):
+        os.remove(infile)
+
 
 def run_cmd(cmd, msg=None):
     '''
@@ -77,7 +81,7 @@ def run_cmd(cmd, msg=None):
     try:
         subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT,)
     except subprocess.CalledProcessError as err:
-        error_msg = 'Error happend!: {}'.format(err)
+        error_msg = 'Error happend!: {}\n{}'.format(err, err.output)
     else:
         error_msg = ''
     if not error_msg:
@@ -117,10 +121,14 @@ def preprocessing(in_bam, ref='hg38', config=config):
                     run_cmd(index_bam, 'Step4: Indexing BWA BAM finished!')
                     flag = True
 
-    os.remove('{}.fq'.format(name))
-    os.remove('{}.rmdup.bam'.format(name))
-    os.remove('{}.sorted.bam'.format(name))
-    return '{}.bwa.bam'.format(name)
+    remove('{}.fq'.format(name))
+    remove('{}.rmdup.bam'.format(name))
+    remove('{}.sorted.bam'.format(name))
+    if os.path.isfile('{}.bwa.bam'.format(name)) and os.path.getsize('{}.bwa.bam'.format(name)) > 0:
+        return '{}.bwa.bam'.format(name)
+    else:
+        sys.exit('Error: No {}.bwa.bam generated!'.format(name))
+        return False
 
 
 def scansv_caller(in_bam, ref='hg38', config=config):
@@ -142,9 +150,13 @@ def scansv_caller(in_bam, ref='hg38', config=config):
         if ret2:
             flag = True
     if flag:
-        os.remove(in_bam)
-        os.remove('{}.bai'.format(in_bam))
-        return '{}.sv.vcf'.format(name)
+        remove(in_bam)
+        remove('{}.bai'.format(in_bam))
+        if os.path.isfile('{}.sv.vcf'.format(name)) and os.path.getsize('{}.sv.vcf'.format(name)) > 0:
+            return '{}.sv.vcf'.format(name)
+        else:
+            sys.exit('Error: No {}.sv.vcf generated!'.format(name))
+            return False
 
 # Function to reverse a string 
 def reverse(string): 
@@ -210,7 +222,7 @@ def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref='hg38'):
                 vcf_writer.write_record(record)
         vcf_writer.close()
         status_message('VCF filtering accomplished!')
-        os.remove(tmp_vcf)
+        remove(tmp_vcf)
         return out_vcf
 
 ################################################################################
@@ -240,7 +252,11 @@ def generate_fasta(peptide_sequence_length, epitope_lengths, downstream_sequence
         downstream_sequence_length
     ]
     ScanNeo_utils.generate_fasta(generate_fasta_params)
-    print("Completed")
+    if os.path.isfile(fasta_file) and os.path.getsize(fasta_file) > 0:
+        return True
+        print("Completed")
+    else:
+        sys.exit('Error: No protein changing indels found in the VCF')
 
 
 def generate_protein_fasta(input_vcf, peptide_sequence_length, epitope_lengths, downstream_length=1000):
@@ -283,7 +299,13 @@ def iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
 
     cmd = '{} {} {} {} {}'.format(iedb_mhc_i_executable, method, allele, epitope_length, fasta)
     response = subprocess.check_output(cmd, shell=True)
-
+    #iedb_result = StringIO(response)
+    #out_file.write(iedb_result.readline())
+    #for line in iedb_result:
+    #    tmp_l = line.rstrip('\n').split('\t')
+    #    ic50  = float(tmp_l[-2])
+    #    if ic50 <= binding_cutoff:
+    #        out_file.write(line)
     out_file.write(response)
     out_file.close()
     status_message('Complete running IEDB on Allele {} and Epitope Length {} with Method {}'.format(allele, epitope_length, methods[method]))
@@ -398,6 +420,7 @@ def reference_proteome_filter(in_file):
     pass
 
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="ScanNeo pipeline: neoantigen identification using RNA-seq data")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.1')
@@ -423,6 +446,7 @@ def parse_args():
     hla_parser.add_argument('-l', '--length', action='store', dest='length', type=int, default=21, help="Length of the peptide sequence to use when creating the FASTA (default: %(default)s)")
     hla_parser.add_argument('--binding', action='store', dest='binding_threshold', type=int, default=500, help="binding threshold ic50 (default: %(default)s nM)")
     hla_parser.add_argument('-e','--epitope-length', action='store', dest='epitope_lengths', help="Length of subpeptides (neoepitopes) to predict. Multiple epitope lengths can be specified using a comma-separated list. Typical epitope lengths vary between 8-11. (default: %(default)s)", default='8,9,10,11')
+    #hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB (default: %(default)s)", default='/home/tywang/bin/packages/iedb', required=True)
     hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB", required=True)
     hla_parser.add_argument('-m', '--metric', action='store', dest='metric', choices=['lowest','median'], default='lowest', help="The ic50 scoring metric to use when filtering epitopes by binding-threshold lowest: Best MT Score - lowest MT ic50 binding score of all chosen prediction methods. median: Median MT Score - median MT ic50 binding score of all chosen prediction methods. (default: %(default)s)" )
     hla_parser.add_argument('-o', '--output', action='store', dest='output', help="output text file name, name.tsv")
@@ -447,7 +471,7 @@ def main():
         pre_vcf = 'pre_vep.{}.vcf'.format(os.getpid())
         vcf_renewer(in_vcf=args.input, out_vcf=pre_vcf, ref=args.ref)
         vep_caller(in_vcf=pre_vcf, out_vcf=out_vcf, ref=args.ref, cutoff=args.cutoff)
-        os.remove(pre_vcf)
+        remove(pre_vcf)
     elif args.sub_command == 'hla':
         flag = False
         if not args.alleles and not args.bam:
