@@ -1066,7 +1066,7 @@ def OptiType_wrapper(in_bam, config=config_getter()):
     name = os.path.splitext(os.path.basename(in_bam))[0]
     hla_name = '{}.hla'.format(name)
 
-    bam2fastq  = 'picard SamToFastq VALIDATION_STRINGENCY=SILENT I={0} F={1}_1.fq F2={1}_2.fq'.format(in_bam, name)
+    bam2fastq  = 'picard -Xms1g -Xmx20g SamToFastq VALIDATION_STRINGENCY=SILENT I={0} F={1}_1.fq F2={1}_2.fq'.format(in_bam, name)
 
     fastq_mapto_hla = 'yara_mapper -e 3 -t 20 {0} {1}_1.fq {1}_2.fq -o {1}.READS.bam'.format(hla_index, name)
 
