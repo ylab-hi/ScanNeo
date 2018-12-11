@@ -22,6 +22,7 @@ conda install -c bioconda bwa
 conda install -c bioconda yara
 conda install -c bioconda razers3
 conda install -c conda-forge glpk
+conda install -c conda-forge pyomo
 conda install -c bioconda pyfaidx
 conda install -c bioconda biopython
 conda install -c anaconda futures
