@@ -28,6 +28,7 @@ conda install -c bioconda biopython
 conda install -c anaconda futures
 conda install -c bioconda pyvcf
 conda install -c anaconda pathlib2
+conda install -c anaconda hdf5
 ```
 ### install transIndel
 ```
