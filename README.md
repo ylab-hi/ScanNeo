@@ -30,6 +30,12 @@ conda install -c bioconda pyvcf
 conda install -c anaconda pathlib2
 conda install -c anaconda hdf5
 ```
+
+Add HDF5's lib directory to your LD_LIBRARY_PATH.
+```
+export LD_LIBRARY_PATH=/path/to/anaconda2/lib:$LD_LIBRARY_PATH
+```
+
 ### install transIndel
 ```
 git clone https://github.com/cauyrd/transIndel 
