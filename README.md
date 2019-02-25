@@ -184,6 +184,7 @@ ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]
                         input VCF file
 -c CUTOFF, --cutoff CUTOFF
                         MAF cutoff default: 0.01
+-s, --slippage          Keep putative PCR slippage derived indels
 -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
 -o OUTPUT, --output OUTPUT
@@ -223,6 +224,7 @@ ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
                          the FASTA (default: 21)
 --binding BINDING_THRESHOLD
                          binding threshold ic50 (default: 500 nM)
+--af AF_FIELD            The field name for allele frequency in VCF (default: AB)
 -e EPITOPE_LENGTHS, --epitope-length EPITOPE_LENGTHS
                          Length of subpeptides (neoepitopes) to predict.
                          Multiple epitope lengths can be specified using a
@@ -276,6 +278,8 @@ __Report Columns__
 |Median WT Score | Median ic50 binding affinity of the wildtype epitope of all prediction algorithms used. NA if there is no WT Epitope Seq. |
 |Median Fold Change | Median WT Score / Median MT Score. NA if there is no WT Epitope Seq. |
 |Individual Prediction Algorithm WT and MT Scores (multiple) | ic50 scores for the MT Epitope Seq and WT Eptiope Seq for the individual prediction algorithms used |
+|Ranking Score |  A useful metric for neoantigen prioritization. A high score suggests a high priority. |
+|Gene Ranking Score | The median value of ranking scores for neoantigens from the same gene. A high score suggests a high priority |
 
 License
 ----------------
