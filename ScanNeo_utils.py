@@ -14,6 +14,7 @@ import subprocess
 import os
 import tempfile
 import shutil
+from collections import defaultdict
 from Bio.Seq import translate
 try:
     import configparser
@@ -62,7 +63,7 @@ def parse_csq_format(vcf_reader):
 
 def resolve_alleles(entry):
     alleles = {}
-    if entry.is_indel or ( entry.INFO['SVTYPE'] == 'DEL' or entry.INFO['SVTYPE'] == 'INS'): # PyVCF bug TYW
+    if entry.is_indel:
         for alt in entry.ALT:
             alt = str(alt)
             if alt[0:1] != entry.REF[0:1]:
@@ -71,6 +72,17 @@ def resolve_alleles(entry):
                 alleles[alt] = '-'
             else:
                 alleles[alt] = alt[1:]
+    elif 'SVTYPE' in entry.INFO:
+        if entry.INFO['SVTYPE'] == 'DEL' or entry.INFO['SVTYPE'] == 'INS': # PyVCF bug TYW
+            for alt in entry.ALT:
+                alt = str(alt)
+                if alt[0:1] != entry.REF[0:1]:
+                    alleles[alt] = alt
+                elif alt[1:] == "":
+                    alleles[alt] = '-'
+                else:
+                    alleles[alt] = alt[1:]
+
     else:
         for alt in entry.ALT:
             alt = str(alt)
@@ -994,7 +1006,7 @@ def run_cmd(cmd, msg=None):
     try:
         subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT,)
     except subprocess.CalledProcessError as err:
-        error_msg = 'Error happend!: {}'.format(err)
+        error_msg = 'Error happend!: {}, {}'.format(err, err.output)
     else:
         error_msg = ''
     if not error_msg:
@@ -1558,8 +1570,90 @@ def combine_parsed_outputs(infile_list, outfile, top_score_metric, binding_cutof
     outfile_obj.close()
 
 
+def add_ranking(infile, outfile, invcf, af_field='AB'):
+    '''Add the Ranking of Neoantigens based on binding affinity, fold change and allele frequency
+       temporary solution, modify it later
+    '''
+
+    indels_info = {}
+    vcf_reader = vcf.Reader(open('{}'.format(invcf), 'r'))
+    for record in vcf_reader:
+        chrm = record.CHROM
+        pos = record.POS
+        ref = record.REF
+        alt = str(record.ALT[0])
+        af = float(record.INFO[af_field])
+        dp = int(record.INFO['DP'])
+        indels_info['{}:{}:{}:{}'.format(chrm, pos, ref, alt)] = {'AF':af, 'DP':dp}
+
+    input_file_handle = open(infile, 'r')
+    reader = csv.DictReader(input_file_handle, delimiter='\t')
+    fieldnames = reader.fieldnames
+    fieldnames.append('Ranking Score')
+
+    rows = []
+    for row in reader:
+        index = '{}:{}:{}:{}'.format(row['Chromosome'], row['Start'], row['Reference'], row['Variant'])
+        if index in indels_info:
+            allele_freq = indels_info[index]['AF']
+        else:
+            allele_freq = 0.0
+        if row['Corresponding WT Score'] == 'NA':
+            wt_score = 100000.0
+        else:
+            wt_score = float(row['Corresponding WT Score'])
+
+        row['Ranking Score'] = int(round(1.0/float(row['Best MT Score']) + wt_score/float(row['Best MT Score']) + allele_freq*100, 2))
+        rows.append(row)
+
+    sorted_rows = sorted(rows, key=lambda row: (int(row['Ranking Score'])), reverse=True)
+
+    tmpfile_name = '{}.prerank.txt'.format(os.getpid())
+    tmp_file = open(tmpfile_name, 'w')
+    tsv_writer = csv.DictWriter(tmp_file, list(fieldnames), delimiter = '\t', lineterminator = '\n')
+    tsv_writer.writeheader()
+    tsv_writer.writerows(sorted_rows)
+    tmp_file.close()
+
+    # Gene ranking
+    gene_epitope_pairs = {}
+    with open(tmpfile_name, 'r') as f:
+        f.readline()
+        for line in f:
+            l = line.rstrip().split('\t')
+            gene = l[10]
+            epitope = l[15]
+            neo_ranking = float(l[-1])
+            gene_epitope_pairs['{}\t{}'.format(gene, epitope)] = neo_ranking
+    # key: gene, value: ranking scores
+    gene_ranking = defaultdict(list)
+    for i in gene_epitope_pairs:
+        gene = i.split('\t')[0]
+        neo_ranking = gene_epitope_pairs[i]
+        gene_ranking[gene].append(neo_ranking)
+
+
+    input_file_handle = open(tmpfile_name, 'r')
+    reader = csv.DictReader(input_file_handle, delimiter='\t')
+    fieldnames = reader.fieldnames
+    fieldnames.append('Gene Ranking Score')
+    rows = []
+    for row in reader:
+        row['Gene Ranking Score'] = int(np.median(gene_ranking[row['Gene Name']]))
+        rows.append(row)
+
+    sorted_rows = sorted(rows, key=lambda row: (float(row['Ranking Score'])), reverse=True)
+
+    out_file = open(outfile, 'w')
+    tsv_writer = csv.DictWriter(out_file, list(fieldnames), delimiter = '\t', lineterminator = '\n')
+    tsv_writer.writeheader()
+    tsv_writer.writerows(sorted_rows)
+    out_file.close()
+    os.remove(tmpfile_name)
+
 
 if __name__ == '__main__':
     result = OptiType_wrapper(sys.argv[1])
     alleles = optitype_parser(result)
-    print(alleles)
+    print(os.path.basename(sys.argv[1]), alleles)
+    #add_ranking('./RNA.LNCaP.tsv', 'old.tsv', './rna.ms.vep.vcf')
