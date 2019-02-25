@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 #-*- coding: utf-8 -*-
 #===============================================================================
-__version__ = '1.0beta'
+__version__ = '1.1beta'
 import sys
 from pathlib2 import Path
 root = str(Path(__file__).resolve().parents[0])
@@ -27,8 +27,8 @@ try:
     from cStringIO import StringIO
 except:
     from StringIO import StringIO
-import ScanNeo_utils
 
+import ScanNeo_utils
 MAX_WORKERS = multiprocessing.cpu_count()
 
 
@@ -40,7 +40,7 @@ chrms = {'chr1', 'chr2', 'chr3', 'chr4', 'chr5',
     'chr6', 'chr7', 'chr8', 'chr9', 'chr10',
     'chr11','chr12', 'chr13', 'chr14', 'chr15',
     'chr16','chr17', 'chr18', 'chr19', 'chr20',
-    'chr21', 'chr22', 'chrX', 'chrY', 'chrM'}
+    'chr21', 'chr22', 'chrX', 'chrY'}
 
 chrms_dict = {'1':'chr1', '2':'chr2', '3':'chr3', '4':'chr4', '5':'chr5',
         '6':'chr6', '7':'chr7', '8':'chr8', '9':'chr9', '10':'chr10',
@@ -102,9 +102,11 @@ def preprocessing(in_bam, ref='hg38', config=config):
     elif ref =='hg19':
         fasta = config['hg19_ref']
 
+    # MAX_RECORDS_IN_RAM=500000
     duplication_remover = 'picard MarkDuplicates I={0} O={1}.rmdup.bam M={1}.marked_dup_metrics.txt REMOVE_DUPLICATES=true CREATE_INDEX=true VALIDATION_STRINGENCY=LENIENT'.format(in_bam, name)
-    bam_filtering = 'sambamba sort -n -p -t 4 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/)" {0}.rmdup.bam -o {0}.sorted.bam'.format(name)
-    bam2fastq     = 'bedtools bamtofastq -i {0}.sorted.bam -fq {0}.fq'.format(name)
+    #bam_filtering = 'sambamba sort -n -p -t 4 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/) and mapping_quality > 0" {0}.rmdup.bam -o {0}.sorted.bam'.format(name)
+    bam_filtering = 'sambamba view -f bam -t 8 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/) and mapping_quality > 0" {0}.rmdup.bam -o {0}.filter.bam'.format(name)
+    bam2fastq     = 'bedtools bamtofastq -i {0}.filter.bam -fq {0}.fq'.format(name)
 
     bwa_mapping   = 'bwa mem -M -t 8 {0} {1}.fq | sambamba view -S -f bam /dev/stdin | sambamba sort -t 10 -o {1}.bwa.bam /dev/stdin'.format(fasta, name)
     index_bam     = 'sambamba index {}.bwa.bam'.format(name)
@@ -122,8 +124,8 @@ def preprocessing(in_bam, ref='hg38', config=config):
                     flag = True
 
     remove('{}.fq'.format(name))
-    remove('{}.rmdup.bam'.format(name))
-    remove('{}.sorted.bam'.format(name))
+    #remove('{}.rmdup.bam'.format(name))
+    #remove('{}.filter.bam'.format(name))
     if os.path.isfile('{}.bwa.bam'.format(name)) and os.path.getsize('{}.bwa.bam'.format(name)) > 0:
         return '{}.bwa.bam'.format(name)
     else:
@@ -152,10 +154,10 @@ def scansv_caller(in_bam, ref='hg38', config=config):
     if flag:
         remove(in_bam)
         remove('{}.bai'.format(in_bam))
-        if os.path.isfile('{}.sv.vcf'.format(name)) and os.path.getsize('{}.sv.vcf'.format(name)) > 0:
-            return '{}.sv.vcf'.format(name)
+        if os.path.isfile('{}.indel.vcf'.format(name)) and os.path.getsize('{}.indel.vcf'.format(name)) > 0:
+            return '{}.indel.vcf'.format(name)
         else:
-            sys.exit('Error: No {}.sv.vcf generated!'.format(name))
+            sys.exit('Error: No {}.indel.vcf generated!'.format(name))
             return False
 
 # Function to reverse a string 
@@ -164,7 +166,36 @@ def reverse(string):
     return string 
 
 
-def vcf_renewer(in_vcf, out_vcf, ref='hg38', config=config):
+def is_slippage(chrm, pos, ref, alt, indel_type):
+    if indel_type == 'INS':
+        if repeat_checker(alt[1:]):
+            pat = re.compile(r'{}{}'.format(alt[0], alt[1] * 4))
+        else:
+            pat = re.compile(r'{}{}'.format(alt[0], alt[1:] * 4))
+        match = pat.match(genome_seq[chrm][pos-1:pos+10])
+        if match:
+            return True
+        else:
+            return False
+    elif indel_type == 'DEL':
+        if repeat_checker(ref[1:]):
+            pat = re.compile(r'{}{}'.format(ref[0], ref[1] * 4))
+        else:
+            pat = re.compile(r'{}{}'.format(ref[0], ref[1:] * 4))
+        match = pat.match(genome_seq[chrm][pos-1:pos+10])
+        if match:
+            return True
+        else:
+            return False
+
+
+def repeat_checker(s):
+    if len(s) == s.count(s[0]):
+        return True
+    else:
+        return False
+
+def vcf_renewer(in_vcf, out_vcf, ref='hg38', slippage=False, config=config):
     '''add REF and ALT sequences
     '''
     status_message('Begin deal with VCF: {}'.format(in_vcf))
@@ -181,12 +212,38 @@ def vcf_renewer(in_vcf, out_vcf, ref='hg38', config=config):
         chrm = record.CHROM
         pos = record.POS
         end = record.INFO['END']
-        if sv_type =='INS':
-            vcf_writer.write_record(record)
-        elif sv_type == 'DEL':
-            record.ALT = [genome_seq[chrm][pos-1:pos]]
-            record.REF = genome_seq[chrm][pos-1:end]
-            vcf_writer.write_record(record)
+        if chrm in chrms:
+            if sv_type =='INS':
+                alt = str(record.ALT[0])
+                if repeat_checker(alt[1:]):
+                    pat = re.compile(r'{}{}'.format(alt[0], alt[1] * 4))
+                else:
+                    pat = re.compile(r'{}{}'.format(alt[0], alt[1:] * 4))
+                match = pat.match(genome_seq[chrm][pos-1:pos+10])
+                if match:
+                    is_slippage = True
+                else:
+                    is_slippage = False
+            elif sv_type == 'DEL':
+                record.ALT = [genome_seq[chrm][pos-1:pos]]
+                record.REF = genome_seq[chrm][pos-1:end]
+                ref = record.REF
+                if repeat_checker(ref[1:]):
+                    pat = re.compile(r'{}{}'.format(ref[0], ref[1] * 4))
+                else:
+                    pat = re.compile(r'{}{}'.format(ref[0], ref[1:] * 4))
+                match = pat.match(genome_seq[chrm][pos-1:pos+10])
+                if match:
+                    is_slippage = True
+                else:
+                    is_slippage = False
+
+            if not slippage:
+                if not is_slippage:
+                    vcf_writer.write_record(record)
+            else:
+                vcf_writer.write_record(record)
+
     vcf_writer.close()
     status_message('VCF add sequences [ref, alt] accomplished!')
 
@@ -199,7 +256,8 @@ def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref='hg38'):
     # add --filter_common
     tmp_vcf = 'tmp.{}.vcf'.format(os.getpid())
 
-    vep_cmd = 'vep --cache --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
+    #vep_cmd = 'vep --cache --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
+    vep_cmd = 'vep --offline --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
         --vcf --symbol --terms SO --af --af_gnomad --plugin Downstream --plugin Wildtype --no_stats'.format(assembly, in_vcf, tmp_vcf)
     ret = run_cmd(vep_cmd,'VEP begin annotation, VEP annotation finished!')
     flag = False
@@ -435,6 +493,7 @@ def parse_args():
         description = "%(prog)s -i indel.vcf -c maf_cutoff -o output.vcf")
     vcf_parser.add_argument('-i', '--input', action='store', dest='input', help="input VCF file", required=True)
     vcf_parser.add_argument('-c', '--cutoff', action='store', dest='cutoff', help="MAF cutoff default: %(default)s", type=float, default=0.01)
+    vcf_parser.add_argument('-s', '--slippage', action="store_true", dest='slippage', help="Keep slippage")
     vcf_parser.add_argument('-r', '--ref', action='store', dest='ref', help="reference genome (default: %(default)s)", choices=['hg19','hg38'], default='hg38')
     vcf_parser.add_argument('-o', '--output', action='store', dest='output', help="output annotated and filtered vcf file (default: %(default)s)",default='output.vcf')
 
@@ -444,6 +503,7 @@ def parse_args():
     hla_parser.add_argument('--alleles', action='store', dest='alleles', help="Name of the allele to use for epitope prediction. Multiple alleles can be specified using a comma-separated listinput HLA class I alleles" )
     hla_parser.add_argument('-b', '--bam', action='store', dest='bam', help="Input RNA-Seq BAM file if you don't know sample HLA class I alleles" )
     hla_parser.add_argument('-l', '--length', action='store', dest='length', type=int, default=21, help="Length of the peptide sequence to use when creating the FASTA (default: %(default)s)")
+    hla_parser.add_argument('--af', action='store', dest='af_field', default='AB', help="The field name for allele frequency in VCF (default: %(default)s)")
     hla_parser.add_argument('--binding', action='store', dest='binding_threshold', type=int, default=500, help="binding threshold ic50 (default: %(default)s nM)")
     hla_parser.add_argument('-e','--epitope-length', action='store', dest='epitope_lengths', help="Length of subpeptides (neoepitopes) to predict. Multiple epitope lengths can be specified using a comma-separated list. Typical epitope lengths vary between 8-11. (default: %(default)s)", default='8,9,10,11')
     #hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB (default: %(default)s)", default='/home/tywang/bin/packages/iedb', required=True)
@@ -469,7 +529,7 @@ def main():
     elif args.sub_command == 'anno':
         out_vcf = args.output
         pre_vcf = 'pre_vep.{}.vcf'.format(os.getpid())
-        vcf_renewer(in_vcf=args.input, out_vcf=pre_vcf, ref=args.ref)
+        vcf_renewer(in_vcf=args.input, out_vcf=pre_vcf, ref=args.ref, slippage=args.slippage)
         vep_caller(in_vcf=pre_vcf, out_vcf=out_vcf, ref=args.ref, cutoff=args.cutoff)
         remove(pre_vcf)
     elif args.sub_command == 'hla':
@@ -490,6 +550,7 @@ def main():
             epitope_lengths = map(int, args.epitope_lengths.split(','))
             path_to_iedb = args.path_to_iedb
             peptide_sequence_length = args.length
+            af_field = args.af_field
             vcf = args.vcf
             status_message('Begin to process VCF: {}'.format(vcf))
             status_message('......')
@@ -501,8 +562,11 @@ def main():
 
             temp_dir = generate_protein_fasta(input_vcf=vcf, peptide_sequence_length=peptide_sequence_length, epitope_lengths=epitope_lengths, downstream_length=1000)
             result_list = call_iedb_and_parse_outputs(path_to_iedb=path_to_iedb, alleles=alleles, epitope_lengths=epitope_lengths, temp_dir=temp_dir, methods=['ann','netmhcpan'], top_score_metric=args.metric)
-            combine_results(infile_list=result_list, outfile=out_filename, top_score_metric=args.metric, binding_cutoff=args.binding_threshold)
-
+            combined_filename = '{}.combined.txt'.format(os.getpid())
+            combined_file = combine_results(infile_list=result_list, outfile=combined_filename, top_score_metric=args.metric, binding_cutoff=args.binding_threshold)
+            if combined_file:
+                ScanNeo_utils.add_ranking(infile=combined_file, outfile=out_filename, invcf=vcf, af_field=af_field)
+                remove(combined_filename)
             end_execute_timestamp = datetime.datetime.now()
             elapsed_time = ( end_execute_timestamp - start_execute_timestamp ).total_seconds()
             status_message('Processing {} completed, consumed {} seconds'.format(vcf, elapsed_time))
