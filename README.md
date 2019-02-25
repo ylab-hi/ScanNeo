@@ -155,6 +155,7 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 -h, --help            show this help message and exit
 -i INPUT, --input INPUT
                         RNA-seq alignment file (BAM)
+--mapq                  Remove reads with MAPQ = 0			
 -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
 ```
@@ -185,6 +186,8 @@ ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]
 -c CUTOFF, --cutoff CUTOFF
                         MAF cutoff default: 0.01
 -s, --slippage          Keep putative PCR slippage derived indels
+-d DIR, --dir DIR     Specify the VEP cache/plugin directory to use.
+                        (default: $HOME/.vep/)
 -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
 -o OUTPUT, --output OUTPUT
