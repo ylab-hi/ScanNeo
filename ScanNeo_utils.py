@@ -1583,8 +1583,8 @@ def add_ranking(infile, outfile, invcf, af_field='AB'):
         ref = record.REF
         alt = str(record.ALT[0])
         af = float(record.INFO[af_field])
-        dp = int(record.INFO['DP'])
-        indels_info['{}:{}:{}:{}'.format(chrm, pos, ref, alt)] = {'AF':af, 'DP':dp}
+        # dp = int(record.INFO['DP'][0])
+        indels_info['{}:{}:{}:{}'.format(chrm, pos, ref, alt)] = {'AF':af}
 
     input_file_handle = open(infile, 'r')
     reader = csv.DictReader(input_file_handle, delimiter='\t')
