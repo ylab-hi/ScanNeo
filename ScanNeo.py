@@ -538,7 +538,7 @@ def main():
             sys.stderr.write("HLA class I alleles [OR] RNA-Seq BAM file is needed!")
             sys.exit(0)
         elif not args.alleles and args.bam:
-            alleles = OptiType_runner(args.input).split(',')
+            alleles = OptiType_runner(args.bam).split(',')
             flag = True
         elif args.alleles and not args.bam:
             alleles = args.alleles.split(',')
