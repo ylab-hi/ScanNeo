@@ -97,7 +97,7 @@ threads=16
 # Note: this is NOT a path to the solver binary, but a keyword argument for
 # Pyomo. Examples: glpk, cplex, cbc.
 
-solver=glpk
+solver=cbc
 threads=1
 ```
 ### configure yara
