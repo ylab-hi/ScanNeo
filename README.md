@@ -104,7 +104,7 @@ threads=1
 Index the HLA reference genome hla_reference_rna.fasta from Optitype
 path/to/anaconda2/share/optitype-1.3.2-1/data/hla_reference_rna.fasta
 ```bash
-yara_index hla_reference_rna.fasta -o hla.index  
+yara_indexer hla_reference_rna.fasta -o hla.index  
 ```
 By executing this command, it will generate 12 files, namely, 
 * hla.index.lf.drp
