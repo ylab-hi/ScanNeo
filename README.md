@@ -1,3 +1,8 @@
+
+# ScanNeo
+[![Build Status](https://travis-ci.org/ylab-hi/ScanNeo.svg?branch=master&status=passed)](https://travis-ci.org/ylab-hi/ScanNeo)
+
+
 Introduction
 ------------
 A pipeline for identifying indel derived neoantigens using RNA-Seq data
