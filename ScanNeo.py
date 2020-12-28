@@ -356,7 +356,7 @@ def iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
     out_file = open(iedb_out, 'w')
 
     cmd = '{} {} {} {} {}'.format(iedb_mhc_i_executable, method, allele, epitope_length, fasta)
-    response = subprocess.check_output(cmd, shell=True)
+    response = subprocess.check_output(cmd, stdin=subprocess.PIPE, shell=True)
     #iedb_result = StringIO(response)
     #out_file.write(iedb_result.readline())
     #for line in iedb_result:
