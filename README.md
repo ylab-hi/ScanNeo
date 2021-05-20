@@ -292,6 +292,17 @@ __Report Columns__
 |Ranking Score |  A useful metric for neoantigen prioritization. A high score suggests a high priority. |
 |Gene Ranking Score | The median value of ranking scores for neoantigens from the same gene. A high score suggests a high priority |
 
+
+Recipe
+-------------------------
+#### HLA class I typing using ScanNeo_utils.py
+```
+ScanNeo_utils.py RNA_seq.bam
+```
+This command will output the input BAM file name and the inferred HLA class I types in the screen.
+RNA_seq.bam  HLA-A*01:01,HLA-A*31:01,HLA-B*37:01,HLA-B*51:01,HLA-C*06:02,HLA-C*15:02
+
+
 License
 ----------------
 This project is licensed under <a href="http://opensource.org/licenses/NPOSL-3.0">NPOSL-3.0</a>.
