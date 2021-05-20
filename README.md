@@ -300,9 +300,9 @@ Recipe
 ScanNeo_utils.py RNA_seq.bam
 ```
 This command will output the input BAM file name and the inferred HLA class I types in the screen.
-
+```
 RNA_seq.bam  HLA-A*01:01,HLA-A*31:01,HLA-B*37:01,HLA-B*51:01,HLA-C*06:02,HLA-C*15:02
-
+```
 
 License
 ----------------
