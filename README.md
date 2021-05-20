@@ -29,10 +29,7 @@ conda install -c bioconda razers3
 conda install -c conda-forge coincbc
 conda install -c conda-forge pyomo
 conda install -c bioconda pyfaidx
-conda install -c bioconda biopython
-conda install -c anaconda futures
 conda install -c bioconda pyvcf
-conda install -c anaconda pathlib2
 conda install -c anaconda hdf5
 ```
 
