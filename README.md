@@ -53,7 +53,6 @@ cd mhc_i
 ```
 
 ScanNeo is only compatible with IEDB 3.1 and above now.
-#ScanNeo will use "netmhcpan BA" and "ann" in the IEDB toolkit.
 
 
 __tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
