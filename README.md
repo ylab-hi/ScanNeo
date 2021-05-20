@@ -13,12 +13,12 @@ These instructions will get you a copy of the project up and running on your loc
 
 Prerequisites
 ----------------
-You need Python 2.7 to run ScanNeo.
+You need Python 3.7 to run ScanNeo.
 
 ### install necessary python packages via anaconda
-Install [anaconda](https://www.anaconda.com/download/) (python 2.7) firstly, then install dependent packages via conda in bioconda channel.
+Install [anaconda](https://www.anaconda.com/download/) (python 3.7) firstly, then install dependent packages via conda in bioconda channel.
 ```
-conda install -c bioconda optitype
+conda install -c bioconda optitype # this step will automatically install razers3, pyomo and glpk
 conda install -c bioconda ensembl-vep
 conda install -c bioconda sambamba
 conda install -c bioconda bedtools
@@ -51,11 +51,15 @@ Place __transIndel_build_RNA.py__ and __transIndel_call.py__ in your folder in P
 ### intall IEDB binding prediction tools
 Download the archives for [HLA class I](http://tools.iedb.org/mhci/download/) and unpack them
 ```
-wget -c https://downloads.iedb.org/tools/mhci/2.19.1/IEDB_MHC_I-2.19.1.tar.gz
-tar -zxvf IEDB_MHC_I-2.19.1.tar.gz
+wget -c https://downloads.iedb.org/tools/mhci/3.1/IEDB_MHC_I-3.1.tar.gz
+tar -zxvf IEDB_MHC_I-3.1.tar.gz
 cd mhc_i
 ./configure
 ```
+
+ScanNeo is only compatible with IEDB 3.1 and above now.
+#ScanNeo will use "netmhcpan BA" and "ann" in the IEDB toolkit.
+
 
 __tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
 
@@ -64,6 +68,10 @@ Install them on Debian/Ubuntu/Mint Linux.
 
 Install them on CentOS/RHEL.
 ```# yum install tcsh gawk```
+
+Or install them via conda
+```conda install -c conda-forge tcsh gawk```
+
 
 ### install VEP plugins
 
@@ -101,6 +109,7 @@ threads=16
 # environment OptiType is run, so make sure to include it in PATH.
 # Note: this is NOT a path to the solver binary, but a keyword argument for
 # Pyomo. Examples: glpk, cplex, cbc.
+# Optitype uses glpk by default, but we recommand use cbc instead
 
 solver=cbc
 threads=1
@@ -142,9 +151,10 @@ hg19=/path/to/gencode.v19.annotation.gtf
 
 [yara]
 
-# yara index for 
+# yara index for hla_reference_rna.fasta
 
 index=/path/to/hla.index
+threads=8
 ```
 
 Usage
@@ -156,17 +166,17 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 
 #### Options:
 
-```	
+```
 -h, --help            show this help message and exit
 -i INPUT, --input INPUT
                         RNA-seq alignment file (BAM)
---mapq                  Remove reads with MAPQ = 0			
+--mapq                  Remove reads with MAPQ = 0
 -r {hg19,hg38}, --ref {hg19,hg38}
                         reference genome (default: hg38)
 ```
 
 #### Input:
-```	
+```
 input_bam_file      :input RNA-seq BAM file. (e.g., rna-seq.bam)
 reference_genome    :specify reference genome (hg19 or hg38)
 ```
@@ -180,7 +190,7 @@ vcf_file			:Reported Indels with VCF format. (rna-seq.indel.vcf)
 
 #### STEP 2: indels annotation using VEP
 ```
-ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]	
+ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]
 ```
 
 #### Options:
@@ -263,14 +273,14 @@ __Report Columns__
 | ---------- | ----------- |
 |Chromosome  | The chromosome of this variant|
 |Start       | The start position of this variant in the zero-based, half-open coordinate system |
-|Stop	     | The stop position of this variant in the zero-based, half-open coordinate system |
+|Stop        | The stop position of this variant in the zero-based, half-open coordinate system |
 |Reference   | The reference allele |
 |Variant     | The alternate allele |
 |Transcript  | The Ensembl ID of the affected transcript |
-|Ensembl Gene ID |	The Ensembl ID of the affected gene |
-|Variant Type |	The type of variant. missense for missense mutations, inframe_ins for inframe insertions, inframe_del for inframe deletions, and FS for frameshift variants |
-|Mutation     |	The amnio acid change of this mutation |
-|Protein Position |	The protein position of the mutation |
+|Ensembl Gene ID |The Ensembl ID of the affected gene |
+|Variant Type |The type of variant. missense for missense mutations, inframe_ins for inframe insertions, inframe_del for inframe deletions, and FS for frameshift variants |
+|Mutation     |The amnio acid change of this mutation |
+|Protein Position |The protein position of the mutation |
 |Gene Name    | The Ensembl gene name of the affected gene |
 |HLA Allele   | The HLA allele for this prediction |
 |Peptide Length | The peptide length of the epitope |
@@ -296,3 +306,4 @@ This project is licensed under <a href="http://opensource.org/licenses/NPOSL-3.0
 Contact
 -----------------
 Bug reports or feature requests can be submitted on the <a href="https://github.com/ylab-hi/ScanNeo/issues">ScanNeo Github page</a>.
+
