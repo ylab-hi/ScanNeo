@@ -101,7 +101,7 @@ this_dir = os.path.dirname(os.path.realpath(__file__))
 [mapping]
 
 # Absolute path to RazerS3 binary, and number of threads to use for mapping
-razers3=/path/to/anaconda2/bin/razers3
+razers3=/path/to/anaconda3/bin/razers3
 threads=16
 
 [ilp]
@@ -116,7 +116,7 @@ threads=1
 ```
 ### configure yara
 Index the HLA reference genome hla_reference_rna.fasta from Optitype
-path/to/anaconda2/share/optitype-1.3.2-1/data/hla_reference_rna.fasta
+path/to/anaconda3/bin/data/hla_reference_rna.fasta
 ```bash
 yara_indexer hla_reference_rna.fasta -o hla.index  
 ```
@@ -154,6 +154,8 @@ hg19=/path/to/gencode.v19.annotation.gtf
 # yara index for hla_reference_rna.fasta
 
 index=/path/to/hla.index
+
+# the number of threads to use
 threads=8
 ```
 
