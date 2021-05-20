@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #-*- coding: utf-8 -*-
 #===============================================================================
-__version__ = '1.0beta'
+__version__ = '2.0'
 import sys
 from pathlib2 import Path
 root = str(Path(__file__).resolve().parents[0])
@@ -23,12 +23,14 @@ from collections import OrderedDict,defaultdict
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import tempfile
 import multiprocessing
+import textwrap
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except:
-    from StringIO import StringIO
+    from io import StringIO
 
 import ScanNeo_utils
+
 MAX_WORKERS = multiprocessing.cpu_count()
 
 
@@ -56,10 +58,10 @@ def external_tool_checking():
     for each in software:
         try:
             path = subprocess.check_output([cmd, each], stderr=subprocess.STDOUT)
-            #path = str(path, 'utf-8')
+            path = str(path, 'utf-8')
         except subprocess.CalledProcessError:
-            sys.stderr.write("Checking for {0} : ERROR - could not find {0}".format(each))
-            sys.stderr.write("Exiting.")
+            print("Checking for '" + each + "': ERROR - could not find '" + each + "'", file=sys.stderr)
+            print("Exiting.", file=sys.stderr)
             sys.exit(0)
         print("Checking for '" + each + "': found " + path)
 
@@ -70,7 +72,6 @@ def remove(infile):
 
 def run_cmd(cmd, msg=None):
     '''
-        
     '''
     status_message(cmd)
     if ',' in msg:
@@ -101,14 +102,14 @@ def preprocessing(in_bam, ref='hg38', config=config):
         fasta = config['hg38_ref']
     elif ref =='hg19':
         fasta = config['hg19_ref']
+    threads = config['threads']
 
     # MAX_RECORDS_IN_RAM=500000
     duplication_remover = 'picard MarkDuplicates I={0} O={1}.rmdup.bam M={1}.marked_dup_metrics.txt REMOVE_DUPLICATES=true CREATE_INDEX=true VALIDATION_STRINGENCY=LENIENT'.format(in_bam, name)
-    #bam_filtering = 'sambamba sort -n -p -t 4 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/) and mapping_quality > 0" {0}.rmdup.bam -o {0}.sorted.bam'.format(name)
-    bam_filtering = 'sambamba view -f bam -t 8 -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/) and mapping_quality > 0" {0}.rmdup.bam -o {0}.filter.bam'.format(name)
+    bam_filtering = 'sambamba view -f bam -t {1} -F "not (cigar =~ /N/ and [XS]!=null and not cigar =~ /I/ and not cigar =~ /D/) and mapping_quality > 0" {0}.rmdup.bam -o {0}.filter.bam'.format(name, threads)
     bam2fastq     = 'bedtools bamtofastq -i {0}.filter.bam -fq {0}.fq'.format(name)
 
-    bwa_mapping   = 'bwa mem -M -t 8 {0} {1}.fq | sambamba view -S -f bam /dev/stdin | sambamba sort -t 10 -o {1}.bwa.bam /dev/stdin'.format(fasta, name)
+    bwa_mapping   = 'bwa mem -M -t {0} {1} {2}.fq | sambamba view -S -f bam /dev/stdin | sambamba sort -t {0} -o {2}.bwa.bam /dev/stdin'.format(threads, fasta, name)
     index_bam     = 'sambamba index {}.bwa.bam'.format(name)
     
     flag = False
@@ -364,13 +365,13 @@ def iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
     #    ic50  = float(tmp_l[-2])
     #    if ic50 <= binding_cutoff:
     #        out_file.write(line)
-    out_file.write(response)
+    out_file.write(response.decode('utf8'))
     out_file.close()
     status_message('Complete running IEDB on Allele {} and Epitope Length {} with Method {}'.format(allele, epitope_length, methods[method]))
     return iedb_out
 
 
-def call_iedb_and_parse_outputs(path_to_iedb, alleles, epitope_lengths, temp_dir, methods, top_score_metric):
+def call_iedb_and_parse_outputs(path_to_iedb, alleles, epitope_lengths, temp_dir, methods, top_score_metric, number_of_threads):
     '''parallelized call iedb and combine allele epitope_length combination (per sample) to parsed files
     '''
     fasta_key_file = os.path.join(temp_dir, 'tmp.fasta.key')
@@ -381,7 +382,7 @@ def call_iedb_and_parse_outputs(path_to_iedb, alleles, epitope_lengths, temp_dir
         parameters.append( (method, allele, epitope_length) )
 
     output_files = []
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    with ProcessPoolExecutor(max_workers=number_of_threads) as executor:
         to_do = {}
         for method, allele, epitope_length in parameters:
             #iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
@@ -407,7 +408,7 @@ def call_iedb_and_parse_outputs(path_to_iedb, alleles, epitope_lengths, temp_dir
             method, allele, epl, _ = os.path.basename(output_file).split('.')
             allele_epitope_dict['{}|{}'.format(allele, epl)].append(output_file)
 
-        with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        with ProcessPoolExecutor(max_workers=number_of_threads) as executor:
             parse_to_do = {}
 
             for allele_epl in allele_epitope_dict:
@@ -480,33 +481,44 @@ def reference_proteome_filter(in_file):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="ScanNeo pipeline: neoantigen identification using RNA-seq data")
+    parser = argparse.ArgumentParser(
+        description="ScanNeo pipeline: neoantigen identification using RNA-seq data",
+        epilog=textwrap.dedent('''Author: Ting-You Wang <tywang@umn.edu>, Hormel Institute, University of Minnesota, 2019'''))
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.1')
     sub_parsers = parser.add_subparsers(help = "sub-command help", dest = "sub_command")
 
     indel_parser = sub_parsers.add_parser("indel", help = "INDELs calling using transIndel",
-        description = "%(prog)s -i rnaseq_bam -r hg38")
+        description = "%(prog)s -i rnaseq_bam -r hg38",
+        epilog=textwrap.dedent('''Author: Ting-You Wang <tywang@umn.edu>, Hormel Institute, University of Minnesota, 2019'''))
     indel_parser.add_argument('-i', '--input', action='store', dest='input', help="RNA-seq alignment file (BAM)", required=True)
     indel_parser.add_argument('-r', '--ref', action='store', dest='ref', help="reference genome (default: %(default)s)", choices=['hg19','hg38'], default='hg38')
 
     vcf_parser = sub_parsers.add_parser("anno", help = "annotate INDELs (VCF) using VEP and filter based on 1KG and gnomAD",
-        description = "%(prog)s -i indel.vcf -c maf_cutoff -o output.vcf")
+        description = "%(prog)s -i indel.vcf -c maf_cutoff -o output.vcf",
+        epilog=textwrap.dedent('''Author: Ting-You Wang <tywang@umn.edu>, Hormel Institute, University of Minnesota, 2019'''))
     vcf_parser.add_argument('-i', '--input', action='store', dest='input', help="input VCF file", required=True)
     vcf_parser.add_argument('-c', '--cutoff', action='store', dest='cutoff', help="MAF cutoff default: %(default)s", type=float, default=0.01)
     vcf_parser.add_argument('-s', '--slippage', action="store_true", dest='slippage', help="Keep slippage")
     vcf_parser.add_argument('-r', '--ref', action='store', dest='ref', help="reference genome (default: %(default)s)", choices=['hg19','hg38'], default='hg38')
     vcf_parser.add_argument('-o', '--output', action='store', dest='output', help="output annotated and filtered vcf file (default: %(default)s)",default='output.vcf')
 
+    class ThreadAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values > MAX_WORKERS:
+                parser.error("Maximum number of threads is {1}".format(option_string, MAX_WORKERS))
+            setattr(namespace, self.dest, values)
+
     hla_parser = sub_parsers.add_parser("hla", help = "HLA genotyping and binding affinity prediction",
-            description = "%(prog)s -i vep.vcf --alleles allele1,allele2 -l peptide_sequence_length -o output.tsv")
+        description = "%(prog)s -i vep.vcf --alleles allele1,allele2 -l peptide_sequence_length -o output.tsv",
+        epilog=textwrap.dedent('''Author: Ting-You Wang <tywang@umn.edu>, Hormel Institute, University of Minnesota, 2019'''))
     hla_parser.add_argument('-i', '--input', action='store', dest='vcf', help="VEP annotated and filtered VCF", required=True)
     hla_parser.add_argument('--alleles', action='store', dest='alleles', help="Name of the allele to use for epitope prediction. Multiple alleles can be specified using a comma-separated listinput HLA class I alleles" )
     hla_parser.add_argument('-b', '--bam', action='store', dest='bam', help="Input RNA-Seq BAM file if you don't know sample HLA class I alleles" )
     hla_parser.add_argument('-l', '--length', action='store', dest='length', type=int, default=21, help="Length of the peptide sequence to use when creating the FASTA (default: %(default)s)")
+    hla_parser.add_argument('-t', '--thread', action=ThreadAction, dest='thread', type=int, default=1, help="Number of threads (default: %(default)s)")
     hla_parser.add_argument('--af', action='store', dest='af_field', default='AB', help="The field name for allele frequency in VCF (default: %(default)s)")
     hla_parser.add_argument('--binding', action='store', dest='binding_threshold', type=int, default=500, help="binding threshold ic50 (default: %(default)s nM)")
     hla_parser.add_argument('-e','--epitope-length', action='store', dest='epitope_lengths', help="Length of subpeptides (neoepitopes) to predict. Multiple epitope lengths can be specified using a comma-separated list. Typical epitope lengths vary between 8-11. (default: %(default)s)", default='8,9,10,11')
-    #hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB (default: %(default)s)", default='/home/tywang/bin/packages/iedb', required=True)
     hla_parser.add_argument('-p','--path-to-iedb', action='store', dest='path_to_iedb', help="Directory that contains the local installation of IEDB", required=True)
     hla_parser.add_argument('-m', '--metric', action='store', dest='metric', choices=['lowest','median'], default='lowest', help="The ic50 scoring metric to use when filtering epitopes by binding-threshold lowest: Best MT Score - lowest MT ic50 binding score of all chosen prediction methods. median: Median MT Score - median MT ic50 binding score of all chosen prediction methods. (default: %(default)s)" )
     hla_parser.add_argument('-o', '--output', action='store', dest='output', help="output text file name, name.tsv")
@@ -547,7 +559,7 @@ def main():
             sys.stderr.write("HLA alleles [OR] RNA-seq BAM file is needed! Cannot process both infomation!")
             sys.exit(0)
         if flag:
-            epitope_lengths = map(int, args.epitope_lengths.split(','))
+            epitope_lengths = list(map(int, args.epitope_lengths.split(',')))
             path_to_iedb = args.path_to_iedb
             peptide_sequence_length = args.length
             af_field = args.af_field
@@ -561,7 +573,7 @@ def main():
                 out_filename = args.output
 
             temp_dir = generate_protein_fasta(input_vcf=vcf, peptide_sequence_length=peptide_sequence_length, epitope_lengths=epitope_lengths, downstream_length=1000)
-            result_list = call_iedb_and_parse_outputs(path_to_iedb=path_to_iedb, alleles=alleles, epitope_lengths=epitope_lengths, temp_dir=temp_dir, methods=['ann','netmhcpan'], top_score_metric=args.metric)
+            result_list = call_iedb_and_parse_outputs(path_to_iedb=path_to_iedb, alleles=alleles, epitope_lengths=epitope_lengths, temp_dir=temp_dir, methods=['ann','netmhcpan'], top_score_metric=args.metric, number_of_threads=args.thread)
             combined_filename = '{}.combined.txt'.format(os.getpid())
             combined_file = combine_results(infile_list=result_list, outfile=combined_filename, top_score_metric=args.metric, binding_cutoff=args.binding_threshold)
             if combined_file:
