@@ -26,6 +26,7 @@ conda install -c bioconda picard
 conda install -c bioconda bwa
 conda install -c bioconda yara
 conda install -c bioconda razers3
+conda install -c bioconda tabix
 conda install -c conda-forge coincbc
 conda install -c conda-forge pyomo
 conda install -c bioconda pyfaidx
@@ -63,6 +64,12 @@ Install them on CentOS/RHEL.
 Or install them via conda
 ```conda install -c conda-forge tcsh gawk```
 
+### install VEP annotations and reference genome fasta
+
+```
+vep_install -a cf -s homo_sapiens -y GRCh38 --CONVERT
+```
+VEP annotations will be installed at ~/.vep be default.
 
 ### install VEP plugins
 
