@@ -1,5 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #-*- coding: utf-8 -*-
+__version__ = '2.0'
 import argparse
 import numpy as np
 import vcf
@@ -19,20 +20,21 @@ from Bio.Seq import translate
 try:
     import configparser
 except ImportError:
-    import ConfigParser as configparser
+    import configparser as configparser
 
 
 def config_getter():
     this_dir = os.path.dirname(os.path.realpath(__file__))
     config_default = os.path.join(this_dir, 'config.ini')
-    config = configparser.SafeConfigParser(os.environ)
+    config = configparser.ConfigParser(os.environ)
     config.read(config_default)
     hg38_ref   = config.get("fasta", "hg38")
     hg19_ref   = config.get("fasta", "hg19")
     hg38_anno  = config.get("annotation", "hg38")
     hg19_anno  = config.get("annotation", "hg19")
     yara_index = config.get("yara", "index")
-    return {'hg38_ref': hg38_ref, 'hg19_ref': hg19_ref,'hg38_anno':hg38_anno, 'hg19_anno':hg19_anno, 'yara_index':yara_index}
+    threads = config.get("yara", "threads")
+    return {'hg38_ref': hg38_ref, 'hg19_ref': hg19_ref,'hg38_anno':hg38_anno, 'hg19_anno':hg19_anno, 'yara_index':yara_index, 'threads': threads}
 
 
 def is_insertion(ref, alt):
@@ -264,7 +266,7 @@ def determine_peptide_sequence_length(full_wildtype_sequence_length, peptide_seq
     #algorithm below works correctly
     if full_wildtype_sequence_length < actual_peptide_sequence_length:
         actual_peptide_sequence_length = full_wildtype_sequence_length
-        print('Wildtype sequence length is shorter than desired peptide sequence length at position (%s, %s, %s). Using wildtype sequence length (%s) instead.' % (line['chromosome_name'], line['start'], line['stop'], actual_peptide_sequence_length))
+        print(('Wildtype sequence length is shorter than desired peptide sequence length at position (%s, %s, %s). Using wildtype sequence length (%s) instead.' % (line['chromosome_name'], line['start'], line['stop'], actual_peptide_sequence_length)))
 
     return actual_peptide_sequence_length
 
@@ -415,10 +417,10 @@ def generate_fasta(args_input = sys.argv[1:]):
             mutation_end_position = mutation_start_position + wildtype_amino_acid_length
             if wildtype_amino_acid != '-' and wildtype_amino_acid != wildtype_subsequence[mutation_start_position:mutation_end_position]:
                 if line['amino_acid_change'].split('/')[0].count('*') > 1:
-                    print("Warning: Amino acid change is not sane - contains multiple stops. Skipping entry {}".format(line['index']))
+                    print(("Warning: Amino acid change is not sane - contains multiple stops. Skipping entry {}".format(line['index'])))
                     continue
                 else:
-                    print("Warning: There was a mismatch between the actual wildtype amino acid and the expected amino acid. Did you use the same reference build version for VEP that you used for creating the VCF?\n%s" % line)
+                    print(("Warning: There was a mismatch between the actual wildtype amino acid and the expected amino acid. Did you use the same reference build version for VEP that you used for creating the VCF?\n%s" % line))
                     continue
             if stop_codon_added:
                 mutant_subsequence = wildtype_subsequence[:mutation_start_position] + mutant_amino_acid
@@ -432,7 +434,7 @@ def generate_fasta(args_input = sys.argv[1:]):
             continue
         
         if 'U' in wildtype_subsequence or 'U' in mutant_subsequence:
-            print("Warning. Sequence contains unsupported amino acid U. Skipping entry {}".format(line['index']))
+            print(("Warning. Sequence contains unsupported amino acid U. Skipping entry {}".format(line['index'])))
             continue
 
         if mutant_subsequence in wildtype_subsequence:
@@ -452,7 +454,7 @@ def generate_fasta(args_input = sys.argv[1:]):
                 fasta_sequences[subsequence] = [key]
 
     count = 1
-    for (subsequence, keys) in fasta_sequences.items():
+    for (subsequence, keys) in list(fasta_sequences.items()):
         args.output_file.writelines('>%s\n' % count)
         args.output_file.writelines('%s\n' % subsequence)
         yaml.dump({count: keys}, args.output_key_file, default_flow_style=False)
@@ -519,7 +521,7 @@ def match_wildtype_and_mutant_entry_for_missense(result, mt_position, wt_results
         result['wt_scores']      = wt_result['wt_scores']
     else:
         result['wt_epitope_seq'] = 'NA'
-        result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
+        result['wt_scores']      = dict.fromkeys(list(result['mt_scores'].keys()), 'NA')
 
     if mt_epitope_seq == wt_epitope_seq:
         result['mutation_position'] = 'NA'
@@ -541,7 +543,7 @@ def match_wildtype_and_mutant_entry_for_frameshift(result, mt_position, wt_resul
     #Since the MT sequence is longer than the WT sequence, not all MT epitopes have a match
     if match_position not in wt_results:
         result['wt_epitope_seq'] = 'NA'
-        result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
+        result['wt_scores']      = dict.fromkeys(list(result['mt_scores'].keys()), 'NA')
         if previous_result['mutation_position'] == 'NA':
             result['mutation_position'] = 'NA'
         elif previous_result['mutation_position'] > 0:
@@ -570,7 +572,7 @@ def match_wildtype_and_mutant_entry_for_frameshift(result, mt_position, wt_resul
             #Even though there is a matching WT epitope there are not enough overlapping amino acids
             #We don't include the matching WT epitope in the output
             result['wt_epitope_seq'] = 'NA'
-            result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
+            result['wt_scores']      = dict.fromkeys(list(result['mt_scores'].keys()), 'NA')
         mutation_position = find_mutation_position(wt_epitope_seq, mt_epitope_seq)
         #print('mu_pos', mutation_position)
         if mutation_position == 1 and int(previous_result['mutation_position']) <= 1:
@@ -601,7 +603,7 @@ def match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_re
             #Even though there is a matching WT epitope there are not enough overlapping amino acids
             #We don't include the matching WT epitope in the output
             result['wt_epitope_seq'] = 'NA'
-            result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
+            result['wt_scores']      = dict.fromkeys(list(result['mt_scores'].keys()), 'NA')
 
         return
 
@@ -612,7 +614,7 @@ def match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_re
     #In this case not all MT epitopes might have a baseline match
     if baseline_best_match_position not in wt_results:
         result['wt_epitope_seq'] = 'NA'
-        result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
+        result['wt_scores']      = dict.fromkeys(list(result['mt_scores'].keys()), 'NA')
         #We then infer the mutation position and match direction from the previous MT epitope
         result['match_direction']= previous_result['match_direction']
         if previous_result['mutation_position'] > 0:
@@ -637,10 +639,10 @@ def match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_re
         best_match_count  = determine_consecutive_matches_from_left(mt_epitope_seq, baseline_best_match_wt_epitope_seq)
         #The alternate best match candidate "from the right" is inferred from the baseline best match position and the indel length
         if result['variant_type'] == 'inframe_ins':
-            insertion_length              = len(iedb_results_for_wt_iedb_result_key.keys()) - len(wt_results.keys())
+            insertion_length              = len(list(iedb_results_for_wt_iedb_result_key.keys())) - len(list(wt_results.keys()))
             alternate_best_match_position = int(baseline_best_match_position) - insertion_length
         elif result['variant_type'] == 'inframe_del':
-            deletion_length                 = len(wt_results.keys()) - len(iedb_results_for_wt_iedb_result_key.keys())
+            deletion_length                 = len(list(wt_results.keys())) - len(list(iedb_results_for_wt_iedb_result_key.keys()))
             alternate_best_match_position   = int(baseline_best_match_position) + deletion_length
         if alternate_best_match_position > 0:
             alternate_best_match_wt_result      = wt_results[str(alternate_best_match_position)]
@@ -672,7 +674,7 @@ def match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_re
             #Even though there is a matching WT epitope there are not enough overlapping amino acids
             #We don't include the matching WT epitope in the output
             result['wt_epitope_seq'] = 'NA'
-            result['wt_scores']      = dict.fromkeys(result['mt_scores'].keys(), 'NA')
+            result['wt_scores']      = dict.fromkeys(list(result['mt_scores'].keys()), 'NA')
 
         result['mutation_position']   = find_mutation_position(baseline_best_match_wt_epitope_seq, mt_epitope_seq)
         result['match_direction']     = match_direction
@@ -681,7 +683,7 @@ def match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_re
 def match_wildtype_and_mutant_entries(iedb_results, wt_iedb_results):
     new_iedb_results = {}
 
-    for key in sorted(iedb_results.keys(), key = lambda x: int(x.split('|')[-1])):
+    for key in sorted(list(iedb_results.keys()), key = lambda x: int(x.split('|')[-1])):
         result = iedb_results[key]
         (wt_iedb_result_key, mt_position) = key.split('|', 1)
 
@@ -699,7 +701,7 @@ def match_wildtype_and_mutant_entries(iedb_results, wt_iedb_results):
         elif result['variant_type'] == 'frameshift':
             match_wildtype_and_mutant_entry_for_frameshift(result, mt_position, wt_results, previous_result)
         elif result['variant_type'] == 'inframe_ins' or result['variant_type'] == 'inframe_del':
-            iedb_results_for_wt_iedb_result_key = dict([(key,value) for key, value in iedb_results.items() if key.startswith(wt_iedb_result_key)])
+            iedb_results_for_wt_iedb_result_key = dict([(key,value) for key, value in list(iedb_results.items()) if key.startswith(wt_iedb_result_key)])
             match_wildtype_and_mutant_entry_for_inframe_indel(result, mt_position, wt_results, previous_result, iedb_results_for_wt_iedb_result_key)
 
         mt_scores = result['mt_scores']
@@ -708,7 +710,7 @@ def match_wildtype_and_mutant_entries(iedb_results, wt_iedb_results):
     return new_iedb_results
 
 def parse_iedb_file(input_iedb_files, tsv_entries, key_file):
-    protein_identifiers_from_label = yaml.load(key_file)
+    protein_identifiers_from_label = yaml.safe_load(key_file)
     #print(protein_identifiers_from_label)
     iedb_results = {}
     wt_iedb_results = {}
@@ -763,18 +765,18 @@ def parse_iedb_file(input_iedb_files, tsv_entries, key_file):
 
 def add_summary_metrics(iedb_results):
     iedb_results_with_metrics = {}
-    for key, value in iedb_results.items():
+    for key, value in list(iedb_results.items()):
         mt_scores     = value['mt_scores']
         best_mt_score = sys.maxsize
-        for method, score in mt_scores.items():
+        for method, score in list(mt_scores.items()):
             if score < best_mt_score:
                 best_mt_score        = score
                 best_mt_score_method = method
         value['best_mt_score']          = best_mt_score
         value['corresponding_wt_score'] = value['wt_scores'][best_mt_score_method]
         value['best_mt_score_method']   = best_mt_score_method
-        value['median_mt_score']        = np.median(mt_scores.values())
-        wt_scores_with_value = [score for score in value['wt_scores'].values() if score != 'NA']
+        value['median_mt_score']        = np.median(list(mt_scores.values()))
+        wt_scores_with_value = [score for score in list(value['wt_scores'].values()) if score != 'NA']
         if not wt_scores_with_value:
             value['median_wt_score']    = 'NA'
         else:
@@ -785,9 +787,9 @@ def add_summary_metrics(iedb_results):
 
 def pick_top_results(iedb_results, top_score_metric):
     score_at_position = {}
-    for key, value in iedb_results.items():
+    for key, value in list(iedb_results.items()):
         (tsv_index, position) = key.split('|', 1)
-        if tsv_index not in score_at_position.keys():
+        if tsv_index not in list(score_at_position.keys()):
             score_at_position[tsv_index] = {}
         if top_score_metric == 'median':
             score_at_position[tsv_index][position] = value['median_mt_score']
@@ -795,9 +797,9 @@ def pick_top_results(iedb_results, top_score_metric):
             score_at_position[tsv_index][position] = value['best_mt_score']
 
     filtered_iedb_results = {}
-    for tsv_index, value in score_at_position.items():
+    for tsv_index, value in list(score_at_position.items()):
         top_score = sys.maxsize
-        for position, score in sorted(value.items(), key=lambda x: x[1]):
+        for position, score in sorted(list(value.items()), key=lambda x: x[1]):
             top_score_key = "%s|%s" % (tsv_index, position)
             if iedb_results[top_score_key]['wt_epitope_seq'] != iedb_results[top_score_key]['mt_epitope_seq']:
                 filtered_iedb_results[top_score_key] = iedb_results[top_score_key]
@@ -824,7 +826,7 @@ def flatten_iedb_results(iedb_results):
         value['best_mt_score_method'],
         value['median_mt_score'],
         value['median_wt_score'],
-    ) for value in iedb_results.values())
+    ) for value in list(iedb_results.values()))
 
     return flattened_iedb_results
 
@@ -1062,13 +1064,14 @@ def OptiType_wrapper(in_bam, config=config_getter()):
     '''
     try:
         path = subprocess.check_output(['which', 'OptiTypePipeline.py'], stderr=subprocess.STDOUT)
-        path = str(path).rstrip()
+        path = path.decode('utf8').rstrip()
     except subprocess.CalledProcessError:
         sys.stderr.write("Checking for {0} : ERROR - could not find {0}".format('OptiTypePipeline.py'))
         sys.stderr.write("Exiting.")
         sys.exit(0)
 
     hla_index = config['yara_index']
+    threads = config['threads']
 
     optitype_folder = Path(path).resolve().parents[0]
     # print(optitype_folder)
@@ -1080,7 +1083,7 @@ def OptiType_wrapper(in_bam, config=config_getter()):
 
     bam2fastq  = 'picard -Xms1g -Xmx20g SamToFastq VALIDATION_STRINGENCY=SILENT I={0} F={1}_1.fq F2={1}_2.fq'.format(in_bam, name)
 
-    fastq_mapto_hla = 'yara_mapper -e 3 -t 20 {0} {1}_1.fq {1}_2.fq -o {1}.READS.bam'.format(hla_index, name)
+    fastq_mapto_hla = 'yara_mapper -e 3 -t {0} {1} {2}_1.fq {2}_2.fq -o {2}.READS.bam'.format(threads, hla_index, name)
 
     hla_reads_filter = 'sambamba view -F "not unmapped and first_of_pair" {0}.READS.bam -f sam -o {1}_1.sam && sambamba view -F "not unmapped and second_of_pair" {0}.READS.bam -f sam -o {1}_2.sam'.format(name, hla_name)
 
@@ -1563,7 +1566,6 @@ def combine_parsed_outputs(infile_list, outfile, top_score_metric, binding_cutof
         #if score > args.binding_threshold or fold_change < args.minimum_fold_change:
         if score > binding_cutoff:
             continue
-
         writer.writerow(entry)
 
     tmp_file.close()
@@ -1655,5 +1657,4 @@ def add_ranking(infile, outfile, invcf, af_field='AB'):
 if __name__ == '__main__':
     result = OptiType_wrapper(sys.argv[1])
     alleles = optitype_parser(result)
-    print(os.path.basename(sys.argv[1]), alleles)
-    #add_ranking('./RNA.LNCaP.tsv', 'old.tsv', './rna.ms.vep.vcf')
+    print((os.path.basename(sys.argv[1]), alleles))
