@@ -13,7 +13,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 Prerequisites
 ----------------
-You need Python 3.7 to run ScanNeo.
+You need Python 3.7 or above to run ScanNeo.
 
 ### install necessary python packages via anaconda
 Install [anaconda](https://www.anaconda.com/download/) (python 3.7) firstly, then install dependent packages via conda in bioconda channel.
