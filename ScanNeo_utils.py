@@ -17,10 +17,7 @@ import tempfile
 import shutil
 from collections import defaultdict
 from Bio.Seq import translate
-try:
-    import configparser
-except ImportError:
-    import configparser as configparser
+import configparser
 
 
 def config_getter():
