@@ -1654,4 +1654,4 @@ def add_ranking(infile, outfile, invcf, af_field='AB'):
 if __name__ == '__main__':
     result = OptiType_wrapper(sys.argv[1])
     alleles = optitype_parser(result)
-    print((os.path.basename(sys.argv[1]), alleles))
+    print('{}\t{}'.format(os.path.basename(sys.argv[1]), alleles))
