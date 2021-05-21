@@ -3,7 +3,7 @@
 #===============================================================================
 __version__ = '2.0'
 import sys
-from pathlib2 import Path
+from pathlib import Path
 root = str(Path(__file__).resolve().parents[0])
 sys.path.append(root)
 import re
@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_compl
 import tempfile
 import multiprocessing
 import textwrap
-
+from io import StringIO
 
 import ScanNeo_utils
 
@@ -355,6 +355,13 @@ def iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
 
     cmd = '{} {} {} {} {}'.format(iedb_mhc_i_executable, method, allele, epitope_length, fasta)
     response = subprocess.check_output(cmd, stdin=subprocess.PIPE, shell=True)
+    #iedb_result = StringIO(response)
+    #out_file.write(iedb_result.readline())
+    #for line in iedb_result:
+    #    tmp_l = line.rstrip('\n').split('\t')
+    #    ic50  = float(tmp_l[-2])
+    #    if ic50 <= binding_cutoff:
+    #        out_file.write(line)
     out_file.write(response.decode('utf8'))
     out_file.close()
     status_message('Complete running IEDB on Allele {} and Epitope Length {} with Method {}'.format(allele, epitope_length, methods[method]))
@@ -474,7 +481,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="ScanNeo pipeline: neoantigen identification using RNA-seq data",
         epilog=textwrap.dedent('''Author: Ting-You Wang <tywang@umn.edu>, Hormel Institute, University of Minnesota, 2019'''))
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.1')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s {}'.format(__version__))
     sub_parsers = parser.add_subparsers(help = "sub-command help", dest = "sub_command")
 
     indel_parser = sub_parsers.add_parser("indel", help = "INDELs calling using transIndel",

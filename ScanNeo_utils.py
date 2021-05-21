@@ -10,13 +10,12 @@ import re
 import math
 import yaml
 from collections import OrderedDict
-from pathlib2 import Path
+from pathlib import Path
 import subprocess
 import os
 import tempfile
 import shutil
 from collections import defaultdict
-from Bio.Seq import translate
 import configparser
 
 
