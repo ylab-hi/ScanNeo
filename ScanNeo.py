@@ -252,7 +252,9 @@ def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref='hg38'):
     elif ref == 'hg38':
         assembly = 'GRCh38'
     # add --filter_common
-    tmp_vcf = 'tmp.{}.vcf'.format(os.getpid())
+    
+    rnd_id = random.getrandbits(42)
+    tmp_vcf = 'tmp.{}.vcf'.format(rnd_id)
 
     #vep_cmd = 'vep --cache --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
     vep_cmd = 'vep --offline --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
