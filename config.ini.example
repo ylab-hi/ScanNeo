@@ -1,0 +1,14 @@
+[fasta]
+
+hg38=/home/usr/database/genome/hg38.fa
+hg19=/home/usr/database/genome/hg19.fa
+
+[annotation]
+
+hg38=/home/usr/database/gencode/gencode.v21.annotation.gtf
+hg19=/home/usr/database/gencode/gencode.v19.annotation.gtf
+
+[yara]
+
+index=/home/usr/database/genome/hla.index
+threads=8
