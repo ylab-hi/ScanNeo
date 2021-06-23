@@ -16,7 +16,22 @@ Prerequisites
 You need Python 3.7 or above to run ScanNeo.
 
 ### install necessary python packages via anaconda
-Install [anaconda](https://www.anaconda.com/download/) (python 3.7) firstly, then install dependent packages via conda in bioconda channel.
+Install [anaconda](https://www.anaconda.com/download/) (python 3.7) firstly.
+
+Make sure you have added Anaconda __bin__ directory to the $PATH environment variable in the file ~/.bashrc.
+Otherwise, please add it the the $PATH by editing .bashrc file, manually.
+```
+export PATH="/home/usr/Python3/bin:$PATH"
+```
+
+You can print the current value of the PATH variable by echoing the PATH environment variable:
+
+```
+echo $PATH
+```
+
+Then, install dependent packages via conda in bioconda channel.
+
 ```
 conda install -c bioconda optitype # this step will automatically install razers3, pyomo and glpk
 conda install -c bioconda ensembl-vep
@@ -33,6 +48,8 @@ conda install -c bioconda pyfaidx
 conda install -c bioconda pyvcf
 conda install -c anaconda hdf5
 ```
+
+The installed executables will be available when you type their names in the Linux Shell, such as vep_install, sambamba, bwa and picard.
 
 ### install transIndel
 ```
