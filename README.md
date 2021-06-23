@@ -49,7 +49,7 @@ conda install -c bioconda pyvcf
 conda install -c anaconda hdf5
 ```
 
-The installed executables will be available when you type their names in the Linux Shell, such as vep_install, sambamba, bwa and picard.
+The installed executables will be available when you type their names in the Linux Shell, such as __vep_install__, __sambamba__, __bwa__ and __picard__.
 
 ### install transIndel
 ```
