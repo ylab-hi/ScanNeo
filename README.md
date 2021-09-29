@@ -336,3 +336,6 @@ Contact
 -----------------
 Bug reports or feature requests can be submitted on the <a href="https://github.com/ylab-hi/ScanNeo/issues">ScanNeo Github page</a>.
 
+Citation
+-----------------
+Please cite out paper at [Bioinformatics](https://academic.oup.com/bioinformatics/article/35/20/4159/5384488).
