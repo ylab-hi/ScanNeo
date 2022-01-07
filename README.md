@@ -1,25 +1,26 @@
-
 # ScanNeo
+
 [![Build Status](https://travis-ci.org/ylab-hi/ScanNeo.svg?branch=master&status=passed)](https://travis-ci.org/ylab-hi/ScanNeo)
 
+## Introduction
 
-Introduction
-------------
 A pipeline for identifying indel derived neoantigens using RNA-Seq data
 
-Getting Started
-----------------
+## Getting Started
+
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
-Prerequisites
-----------------
+## Prerequisites
+
 You need Python 3.7 or above to run ScanNeo.
 
 ### install necessary python packages via anaconda
+
 Install [anaconda](https://www.anaconda.com/download/) (python 3.7) firstly.
 
-Make sure you have added Anaconda __bin__ directory to the $PATH environment variable in the file ~/.bashrc.
+Make sure you have added Anaconda **bin** directory to the $PATH environment variable in the file ~/.bashrc.
 Otherwise, please add it the the $PATH by editing .bashrc file, manually.
+
 ```
 export PATH="/home/usr/Python3/bin:$PATH"
 ```
@@ -49,17 +50,20 @@ conda install -c bioconda pyvcf
 conda install -c anaconda hdf5
 ```
 
-The installed executables will be available when you type their names in the Linux Shell, such as __vep_install__, __sambamba__, __bwa__ and __picard__.
+The installed executables will be available when you type their names in the Linux Shell, such as **vep_install**, **sambamba**, **bwa** and **picard**.
 
 ### install transIndel
+
 ```
-git clone https://github.com/cauyrd/transIndel 
+git clone https://github.com/cauyrd/transIndel
 ```
 
-Place __transIndel_build_RNA.py__ and __transIndel_call.py__ in your folder in PATH.
+Place **transIndel_build_RNA.py** and **transIndel_call.py** in your folder in PATH.
 
 ### intall IEDB binding prediction tools
+
 Download the archives for [HLA class I](http://tools.iedb.org/mhci/download/) and unpack them
+
 ```
 wget -c https://downloads.iedb.org/tools/mhci/3.1/IEDB_MHC_I-3.1.tar.gz
 tar -zxvf IEDB_MHC_I-3.1.tar.gz
@@ -69,23 +73,23 @@ cd mhc_i
 
 ScanNeo is only compatible with IEDB 3.1 and above now.
 
-
-__tcsh__ and __gawk__ are needed for IEDB binding prediction tools. You have to install them if they are not available.
+**tcsh** and **gawk** are needed for IEDB binding prediction tools. You have to install them if they are not available.
 
 Install them on Debian/Ubuntu/Mint Linux.
-```$ sudo apt-get install tcsh gawk```
+`$ sudo apt-get install tcsh gawk`
 
 Install them on CentOS/RHEL.
-```# yum install tcsh gawk```
+`# yum install tcsh gawk`
 
 Or install them via conda
-```conda install -c conda-forge tcsh gawk```
+`conda install -c conda-forge tcsh gawk`
 
 ### install VEP annotations and reference genome fasta
 
 ```
 vep_install -a cf -s homo_sapiens -y GRCh38 --CONVERT
 ```
+
 VEP annotations will be installed at ~/.vep be default.
 
 ### install VEP plugins
@@ -97,21 +101,25 @@ cp Downstream.pm ~/.vep/Plugins
 cp Wildtype.pm ~/.vep/Plugins
 ```
 
+## Configuration
 
-Configuration
-----------------
 ### configure Optitype
 
-Make modification on __OptiTypePipeline.py__
+Make modification on **OptiTypePipeline.py**
 Change from
+
 ```python
 this_dir = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(os.path.realpath(__file__))))
 ```
+
 to
+
 ```python
 this_dir = os.path.dirname(os.path.realpath(__file__))
 ```
+
 #### configure config.ini of Optitype
+
 ```
 [mapping]
 
@@ -129,26 +137,33 @@ threads=16
 solver=cbc
 threads=1
 ```
+
 ### configure yara
+
 Index the HLA reference genome hla_reference_rna.fasta from Optitype
 path/to/anaconda3/bin/data/hla_reference_rna.fasta
+
 ```bash
-yara_indexer hla_reference_rna.fasta -o hla.index  
+yara_indexer hla_reference_rna.fasta -o hla.index
 ```
-By executing this command, it will generate 12 files, namely, 
-* hla.index.lf.drp
-* hla.index.lf.drv
-* hla.index.rid.concat
-* hla.index.sa.ind
-* hla.index.sa.val
-* hla.index.txt.limits
-* hla.index.lf.drs
-* hla.index.lf.pst
-* hla.index.rid.limits
-* hla.index.sa.len
-* hla.index.txt.concat
-* hla.index.txt.size
+
+By executing this command, it will generate 12 files, namely,
+
+- hla.index.lf.drp
+- hla.index.lf.drv
+- hla.index.rid.concat
+- hla.index.sa.ind
+- hla.index.sa.val
+- hla.index.txt.limits
+- hla.index.lf.drs
+- hla.index.lf.pst
+- hla.index.rid.limits
+- hla.index.sa.len
+- hla.index.txt.concat
+- hla.index.txt.size
+
 ### configure config.ini file
+
 ```
 [fasta]
 
@@ -174,9 +189,10 @@ index=/path/to/hla.index
 threads=8
 ```
 
-Usage
--------------------------
+## Usage
+
 #### STEP 1: INDEL calling using RNA-seq data
+
 ```
 ScanNeo.py indel -i rnaseq_bam -r hg38
 ```
@@ -193,24 +209,28 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 ```
 
 #### Input:
+
 ```
 input_bam_file      :input RNA-seq BAM file. (e.g., rna-seq.bam)
 reference_genome    :specify reference genome (hg19 or hg38)
 ```
 
 #### Output:
+
 ```
-	
+
 your_output_bam_file		:BAM file for CIGAR string redefinement. (rna-seq.indel.bam)
 vcf_file			:Reported Indels with VCF format. (rna-seq.indel.vcf)
 ```
 
 #### STEP 2: indels annotation using VEP
+
 ```
 ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]
 ```
 
 #### Options:
+
 ```
 -h, --help            show this help message and exit
 -i INPUT, --input INPUT
@@ -228,7 +248,8 @@ ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]
 ```
 
 #### Input:
-```	
+
+```
 input_vcf_file   	        :input VCF file is produced by ScanNeo indel
 cutoff   			:MAF cutoff according to 1000 genome project and gnomAD project
 reference_genome                :specify reference genome (hg19 or hg38)
@@ -236,17 +257,19 @@ reference_genome                :specify reference genome (hg19 or hg38)
 
 #### Output:
 
-```	
+```
 output_annotated_vcf_file   			:VEP annotated Indels with VCF format
 ```
 
 #### STEP 3: neoantigen prediction
+
 ```
 ScanNeo.py hla -i vep.vcf --alleles HLA-A*02:01,HLA-B*08:01,HLA-C*03:03 -e 8,9 -o output.tsv [options]
 ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
 ```
 
 #### Options:
+
 ```
 -h, --help            show this help message and exit
 -i VCF, --input VCF   VEP annotated and filtered VCF
@@ -267,7 +290,7 @@ ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
                          between 8-11. (default: 8,9,10,11)
 -p PATH_TO_IEDB, --path-to-iedb PATH_TO_IEDB
                          Directory that contains the local installation of IEDB
-                             
+
 -m {lowest,median}, --metric {lowest,median}
                         The ic50 scoring metric to use when filtering epitopes
                         by binding-threshold lowest: Best MT Score - lowest MT
@@ -284,58 +307,60 @@ ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
 name.tsv file contains neoantigen prediction results
 ```
 
-__Report Columns__
+**Report Columns**
 
-|Column Name | Description |
-| ---------- | ----------- |
-|Chromosome  | The chromosome of this variant|
-|Start       | The start position of this variant in the zero-based, half-open coordinate system |
-|Stop        | The stop position of this variant in the zero-based, half-open coordinate system |
-|Reference   | The reference allele |
-|Variant     | The alternate allele |
-|Transcript  | The Ensembl ID of the affected transcript |
-|Ensembl Gene ID |The Ensembl ID of the affected gene |
-|Variant Type |The type of variant. missense for missense mutations, inframe_ins for inframe insertions, inframe_del for inframe deletions, and FS for frameshift variants |
-|Mutation     |The amnio acid change of this mutation |
-|Protein Position |The protein position of the mutation |
-|Gene Name    | The Ensembl gene name of the affected gene |
-|HLA Allele   | The HLA allele for this prediction |
-|Peptide Length | The peptide length of the epitope |
-|Sub-peptide Position | The one-based position of the epitope in the protein sequence used to make the prediction |
-|Mutation Position    | The one-based position of the start of the mutation in the epitope. 0 if the start of the mutation is before the epitope |
-|MT Epitope Seq       | Mutant epitope sequence |
-|WT Epitope Seq   | Wildtype (reference) epitope sequence at the same position in the full protein sequence. NA if there is no wildtype sequence at this position or if more than half of the amino acids of the mutant epitope are mutated |
-|Best MT Score Method | Prediction algorithm with the lowest mutant ic50 binding affinity for this epitope |
-|Best MT Score        | Lowest ic50 binding affinity of all prediction algorithms used | 
-|Corresponding WT Score | ic50 binding affinity of the wildtype epitope. NA if there is no WT Epitope Seq.|
-|Corresponding Fold Change | Corresponding WT Score / Best MT Score. NA if there is no WT Epitope Seq.|
-|Median MT Score | Median ic50 binding affinity of the mutant epitope of all prediction algorithms used |
-|Median WT Score | Median ic50 binding affinity of the wildtype epitope of all prediction algorithms used. NA if there is no WT Epitope Seq. |
-|Median Fold Change | Median WT Score / Median MT Score. NA if there is no WT Epitope Seq. |
-|Individual Prediction Algorithm WT and MT Scores (multiple) | ic50 scores for the MT Epitope Seq and WT Eptiope Seq for the individual prediction algorithms used |
-|Ranking Score |  A useful metric for neoantigen prioritization. A high score suggests a high priority. |
-|Gene Ranking Score | The median value of ranking scores for neoantigens from the same gene. A high score suggests a high priority |
+| Column Name                                                 | Description                                                                                                                                                                                                             |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chromosome                                                  | The chromosome of this variant                                                                                                                                                                                          |
+| Start                                                       | The start position of this variant in the zero-based, half-open coordinate system                                                                                                                                       |
+| Stop                                                        | The stop position of this variant in the zero-based, half-open coordinate system                                                                                                                                        |
+| Reference                                                   | The reference allele                                                                                                                                                                                                    |
+| Variant                                                     | The alternate allele                                                                                                                                                                                                    |
+| Transcript                                                  | The Ensembl ID of the affected transcript                                                                                                                                                                               |
+| Ensembl Gene ID                                             | The Ensembl ID of the affected gene                                                                                                                                                                                     |
+| Variant Type                                                | The type of variant. missense for missense mutations, inframe_ins for inframe insertions, inframe_del for inframe deletions, and FS for frameshift variants                                                             |
+| Mutation                                                    | The amnio acid change of this mutation                                                                                                                                                                                  |
+| Protein Position                                            | The protein position of the mutation                                                                                                                                                                                    |
+| Gene Name                                                   | The Ensembl gene name of the affected gene                                                                                                                                                                              |
+| HLA Allele                                                  | The HLA allele for this prediction                                                                                                                                                                                      |
+| Peptide Length                                              | The peptide length of the epitope                                                                                                                                                                                       |
+| Sub-peptide Position                                        | The one-based position of the epitope in the protein sequence used to make the prediction                                                                                                                               |
+| Mutation Position                                           | The one-based position of the start of the mutation in the epitope. 0 if the start of the mutation is before the epitope                                                                                                |
+| MT Epitope Seq                                              | Mutant epitope sequence                                                                                                                                                                                                 |
+| WT Epitope Seq                                              | Wildtype (reference) epitope sequence at the same position in the full protein sequence. NA if there is no wildtype sequence at this position or if more than half of the amino acids of the mutant epitope are mutated |
+| Best MT Score Method                                        | Prediction algorithm with the lowest mutant ic50 binding affinity for this epitope                                                                                                                                      |
+| Best MT Score                                               | Lowest ic50 binding affinity of all prediction algorithms used                                                                                                                                                          |
+| Corresponding WT Score                                      | ic50 binding affinity of the wildtype epitope. NA if there is no WT Epitope Seq.                                                                                                                                        |
+| Corresponding Fold Change                                   | Corresponding WT Score / Best MT Score. NA if there is no WT Epitope Seq.                                                                                                                                               |
+| Median MT Score                                             | Median ic50 binding affinity of the mutant epitope of all prediction algorithms used                                                                                                                                    |
+| Median WT Score                                             | Median ic50 binding affinity of the wildtype epitope of all prediction algorithms used. NA if there is no WT Epitope Seq.                                                                                               |
+| Median Fold Change                                          | Median WT Score / Median MT Score. NA if there is no WT Epitope Seq.                                                                                                                                                    |
+| Individual Prediction Algorithm WT and MT Scores (multiple) | ic50 scores for the MT Epitope Seq and WT Eptiope Seq for the individual prediction algorithms used                                                                                                                     |
+| Ranking Score                                               | A useful metric for neoantigen prioritization. A high score suggests a high priority.                                                                                                                                   |
+| Gene Ranking Score                                          | The median value of ranking scores for neoantigens from the same gene. A high score suggests a high priority                                                                                                            |
 
+## Recipe
 
-Recipe
--------------------------
 #### HLA class I typing using ScanNeo_utils.py
+
 ```
 ScanNeo_utils.py RNA_seq.bam
 ```
+
 This command will output the input BAM file name and the inferred HLA class I types in the screen.
+
 ```
 RNA_seq.bam  HLA-A*01:01,HLA-A*31:01,HLA-B*37:01,HLA-B*51:01,HLA-C*06:02,HLA-C*15:02
 ```
 
-License
-----------------
+## License
+
 This project is licensed under <a href="http://opensource.org/licenses/NPOSL-3.0">NPOSL-3.0</a>.
 
-Contact
------------------
+## Contact
+
 Bug reports or feature requests can be submitted on the <a href="https://github.com/ylab-hi/ScanNeo/issues">ScanNeo Github page</a>.
 
-Citation
------------------
+## Citation
+
 Please cite out paper at [Bioinformatics](https://academic.oup.com/bioinformatics/article/35/20/4159/5384488).

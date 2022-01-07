@@ -7,5 +7,5 @@ before_install:
   - pip install -U pytest
   - pip install pyfaidx
 script:
-    # Check the source code for obvious errors
-    - python --version
+  # Check the source code for obvious errors
+  - python --version
