@@ -1,0 +1,23 @@
+/.coverage
+/.coverage.*
+/.python-version
+/.pytype/
+/dist/
+/old/
+/docs/_build/
+/src/*.egg-info/
+__pycache__/
+
+# editor
+.idea/
+.run/
+# jupyter notebook
+*.ipynb
+# bam
+*.bam
+*.sam
+test.fasta
+test.vcf
+# debug reprot
+/debuglog/
+.DS*

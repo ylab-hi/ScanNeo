@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 #===============================================================================
-__version__ = '2.0'
+__version__ = '2.1'
 import sys
 from pathlib import Path
 root = str(Path(__file__).resolve().parents[0])
@@ -47,7 +47,6 @@ chrms_dict = {'1':'chr1', '2':'chr2', '3':'chr3', '4':'chr4', '5':'chr5',
         '16':'chr16','17':'chr17', '18':'chr18', '19':'chr19', '20':'chr20',
         '21':'chr21', '22':'chr22', 'X':'chrX', 'Y':'chrY', 'MT':'chrM'}
 
-
 def external_tool_checking():
     """checking dependencies are installed"""
     software = ['picard', 'vep', 'sambamba', 'bedtools', 'bwa','transIndel_build_RNA.py','transIndel_call.py']
@@ -65,7 +64,6 @@ def external_tool_checking():
 def remove(infile):
     if os.path.isfile(infile):
         os.remove(infile)
-
 
 def run_cmd(cmd, msg=None):
     '''
@@ -330,6 +328,35 @@ def generate_protein_fasta(input_vcf, peptide_sequence_length, epitope_lengths, 
     generate_fasta(peptide_sequence_length, epitope_lengths, downstream_sequence_length, temp_dir)
     return temp_dir
 
+def parse_files(output_file, temp_dir):
+    fasta_file = os.path.join(temp_dir, 'tmp.fasta')
+    fasta_key_file = os.path.join(temp_dir, 'tmp.fasta.key')
+
+    with open(fasta_key_file, 'r') as _fasta_key_file:
+        keys = yaml.safe_load(_fasta_key_file)
+
+    dataframe = OrderedDict()
+    with open(fasta_file, 'r') as _fasta_file:
+        for line in _fasta_file:
+            key      = line.rstrip().replace(">","")
+            sequence = _fasta_file.readline().rstrip()
+            ids      = keys[int(key)]
+            for id in ids:
+                (type, index) = id.split('.', 1)
+                if index not in dataframe:
+                    dataframe[index] = {}
+                dataframe[index][type] = sequence
+
+    with open(output_file, 'w') as parsed_fasta_file:
+        for index, sequences in dataframe.items():
+            for type in ('WT', 'MT'):
+                parsed_fasta_file.write(">{}.{}\n".format(type, index))
+                parsed_fasta_file.write("{}\n".format(sequences[type]))
+    print("Completed")
+
+def generate_protein_fasta_main(input_vcf, peptide_sequence_length, output_fasta_file, downstream_sequence_length=1000):
+    temp_dir = generate_protein_fasta(input_vcf, peptide_sequence_length, '0', downstream_sequence_length)
+    parse_files(output_fasta_file, temp_dir)
 
 def iedb_caller(path_to_iedb, method, allele, epitope_length, temp_dir):
     '''IEDB MHC caller (HLA class I)
@@ -522,6 +549,15 @@ def parse_args():
     hla_parser.add_argument('-m', '--metric', action='store', dest='metric', choices=['lowest','median'], default='lowest', help="The ic50 scoring metric to use when filtering epitopes by binding-threshold lowest: Best MT Score - lowest MT ic50 binding score of all chosen prediction methods. median: Median MT Score - median MT ic50 binding score of all chosen prediction methods. (default: %(default)s)" )
     hla_parser.add_argument('-o', '--output', action='store', dest='output', help="output text file name, name.tsv")
 
+    fasta_parser = sub_parsers.add_parser("fasta", help = "Generate protein fasta from VEP-annotated VCF",
+        description = "%(prog)s -i vep.vcf -l peptide_sequence_length -o output.fasta",
+        epilog=textwrap.dedent('''Author: Ting-You Wang <tywang@umn.edu>, Hormel Institute, University of Minnesota, 2019'''))
+    fasta_parser.add_argument('-i', '--input', action='store', dest='vcf', help="A VEP-annotated single-sample VCF containing transcript, Wildtype protein sequence, and Downstream protein sequence information", required=True)
+    fasta_parser.add_argument('-l', '--length', action='store', dest='length', type=int, default=21, help="Length of the peptide sequence to use when creating the FASTA (default: %(default)s)")
+    fasta_parser.add_argument('-d', '--downstream_length', action='store', dest='downstream_length', default=1000, help="Cap to limit the downstream sequence length for frameshifts when creating the fasta file."
+        + "Use 'full' to include the full downstream sequence. (Default: %(default)s)")
+    fasta_parser.add_argument('-o', '--output', action='store', dest='output', default='output.fasta', help="output fasta file name (default: %(default)s)")
+
     return parser
 
 
@@ -581,6 +617,8 @@ def main():
             end_execute_timestamp = datetime.datetime.now()
             elapsed_time = ( end_execute_timestamp - start_execute_timestamp ).total_seconds()
             status_message('Processing {} completed, consumed {} seconds'.format(vcf, elapsed_time))
+    elif args.sub_command == 'fasta':
+        generate_protein_fasta_main(input_vcf=args.vcf, peptide_sequence_length=args.length, output_fasta_file=args.output, downstream_sequence_length=args.downstream_length)
 
 if __name__ == '__main__':
     try:

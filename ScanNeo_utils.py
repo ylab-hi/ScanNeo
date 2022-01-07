@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-__version__ = '2.0'
+__version__ = '2.1'
 import argparse
 import numpy as np
 import vcf
@@ -390,7 +390,6 @@ def generate_fasta(args_input = sys.argv[1:]):
                 stop_codon_added = True
             else:
                 stop_codon_added = False
-
             position = int(line['protein_position'].split('-', 1)[0]) - 1
             wildtype_amino_acid_length = len(wildtype_amino_acid)
             if mutant_amino_acid == '-':
