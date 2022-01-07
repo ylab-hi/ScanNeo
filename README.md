@@ -353,6 +353,32 @@ This command will output the input BAM file name and the inferred HLA class I ty
 RNA_seq.bam  HLA-A*01:01,HLA-A*31:01,HLA-B*37:01,HLA-B*51:01,HLA-C*06:02,HLA-C*15:02
 ```
 
+#### Generate an annotated fasta file from a VCF with protein sequences of mutations and matching wildtypes
+
+```
+ScanNeo.py fasta -i input.vcf -l 21 -o output.fasta
+```
+
+#### Options:
+
+```
+-h, --help            show this help message and exit
+-i VCF, --input VCF   A VEP-annotated single-sample VCF containing transcript, Wildtype protein sequence, and Downstream protein sequence information
+-l LENGTH, --length LENGTH
+                        Length of the peptide sequence to use when creating the FASTA (default: 21)
+-d DOWNSTREAM_LENGTH, --downstream_length DOWNSTREAM_LENGTH
+                        Cap to limit the downstream sequence length for frameshifts when creating the fasta file.Use 'full' to include the full downstream
+                        sequence. (Default: 1000)
+-o OUTPUT, --output OUTPUT
+                        output fasta file name (default: output.fasta)
+```
+
+#### Output:
+
+```
+output.fasta file contains predicted fasta sequences (including Wildtype and Mutant)
+```
+
 ## License
 
 This project is licensed under <a href="http://opensource.org/licenses/NPOSL-3.0">NPOSL-3.0</a>.
