@@ -376,7 +376,7 @@ ScanNeo.py fasta -i input.vcf -l 21 -o output.fasta
 #### Output:
 
 ```
-output.fasta file contains predicted protein fasta sequences (including Wildtype and Mutant)
+output.fasta file contains predicted protein fasta sequences (including Wildtype and Mutant sequences)
 ```
 
 ## License
