@@ -84,10 +84,17 @@ Install them on CentOS/RHEL.
 Or install them via conda
 `conda install -c conda-forge tcsh gawk`
 
-### install VEP annotations and reference genome fasta
+### install VEP annotations and reference fasta
+For __Human genome__
 
 ```
-vep_install -a cf -s homo_sapiens -y GRCh38 --CONVERT
+vep_install -a cf -s homo_sapiens -y GRCh38 --CONVERT # hg38
+vep_install -a cf -s homo_sapiens -y GRCh37 --CONVERT # hg19
+```
+For __Mouse genome__
+```
+vep_install -a cf -s mus_musculus -y GRCm39 --CONVERT # mm39
+vep_install -a cf -s mus_musculus -y GRCm38 --CONVERT # mm10
 ```
 
 VEP annotations will be installed at ~/.vep be default.
