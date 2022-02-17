@@ -1509,6 +1509,12 @@ def allele_checker(in_allele, method):
                 "HLA-C*14:02",
                 "HLA-C*15:02",
                 "HLA-E*01:01",
+                "H-2-Db",
+                "H-2-Dd",
+                "H-2-Kb",
+                "H-2-Kd",
+                "H-2-Kk",
+                "H-2-Ld",
             ]
         ),
         "netmhcpan": frozenset(
@@ -4437,6 +4443,12 @@ def allele_checker(in_allele, method):
                 "HLA-G*01:07",
                 "HLA-G*01:08",
                 "HLA-G*01:09",
+                "H-2-Db",
+                "H-2-Dd",
+                "H-2-Kb",
+                "H-2-Kd",
+                "H-2-Kk",
+                "H-2-Ld",
             ]
         ),
     }
