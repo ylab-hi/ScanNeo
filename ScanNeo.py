@@ -347,10 +347,12 @@ def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref="hg38"):
     tmp_vcf = f"tmp.{rnd_id}.vcf"
     if ref.startswith("hg"):
         _af_gnomad = "--af_gnomad"
+        _species = "homo_sapiens"
     else:
         _af_gnomad = ""
+        _species = "mus_musculus"
 
-    vep_cmd = f"vep --offline --force_overwrite --assembly {assembly} --input_file {in_vcf} --format vcf --output_file {tmp_vcf} \
+    vep_cmd = f"vep --offline --force_overwrite --species {_species} --assembly {assembly} --input_file {in_vcf} --format vcf --output_file {tmp_vcf} \
         --vcf --symbol --terms SO --af {_af_gnomad} --plugin Downstream --plugin Wildtype --no_stats"
 
     ret = run_cmd(vep_cmd, "VEP begin annotation, VEP annotation finished!")
