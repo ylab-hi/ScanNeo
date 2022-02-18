@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # ===============================================================================
-__version__ = "2.1"
+__version__ = "2.2"
 import sys
 from pathlib import Path
 
@@ -14,7 +14,7 @@ import numpy as np
 import glob
 from pyfaidx import Fasta
 import subprocess
-import random
+import secrets
 import shutil
 import datetime
 import itertools
@@ -159,6 +159,10 @@ def preprocessing(in_bam, ref="hg38", config=config):
         fasta = config["hg38_ref"]
     elif ref == "hg19":
         fasta = config["hg19_ref"]
+    elif ref == "mm39":
+        fasta = config["mm39_ref"]
+    elif ref == "mm10":
+        fasta = config["mm10_ref"]
     threads = config["threads"]
 
     # MAX_RECORDS_IN_RAM=500000
@@ -205,6 +209,12 @@ def scansv_caller(in_bam, ref="hg38", config=config):
     elif ref == "hg19":
         fasta = config["hg19_ref"]
         annotation = config["hg19_anno"]
+    elif ref == "mm39":
+        fasta = config["mm39_ref"]
+        annotation = config["hg39_anno"]
+    elif ref == "mm10":
+        fasta = config["mm10_ref"]
+        annotation = config["mm10_anno"]
 
     scansv_build = f"transIndel_build_RNA.py -r {fasta} -g {annotation} -i {in_bam} -o {name}.indel.bam"
     scansv_call = "transIndel_call.py -i {0}.indel.bam -o {0} -d 10 -m 50 -l 1".format(
@@ -239,9 +249,9 @@ def reverse(string):
 def is_slippage(chrm, pos, ref, alt, indel_type):
     if indel_type == "INS":
         if repeat_checker(alt[1:]):
-            pat = re.compile(fr"{alt[0]}{alt[1] * 4}")
+            pat = re.compile(rf"{alt[0]}{alt[1] * 4}")
         else:
-            pat = re.compile(fr"{alt[0]}{alt[1:] * 4}")
+            pat = re.compile(rf"{alt[0]}{alt[1:] * 4}")
         match = pat.match(genome_seq[chrm][pos - 1 : pos + 10])
         if match:
             return True
@@ -249,9 +259,9 @@ def is_slippage(chrm, pos, ref, alt, indel_type):
             return False
     elif indel_type == "DEL":
         if repeat_checker(ref[1:]):
-            pat = re.compile(fr"{ref[0]}{ref[1] * 4}")
+            pat = re.compile(rf"{ref[0]}{ref[1] * 4}")
         else:
-            pat = re.compile(fr"{ref[0]}{ref[1:] * 4}")
+            pat = re.compile(rf"{ref[0]}{ref[1:] * 4}")
         match = pat.match(genome_seq[chrm][pos - 1 : pos + 10])
         if match:
             return True
@@ -273,6 +283,11 @@ def vcf_renewer(in_vcf, out_vcf, ref="hg38", slippage=False, config=config):
         fasta = config["hg38_ref"]
     elif ref == "hg19":
         fasta = config["hg19_ref"]
+    elif ref == "mm39":
+        fasta = config["mm39_ref"]
+    elif ref == "mm10":
+        fasta = config["mm10_ref"]
+
     genome_seq = Fasta(fasta, sequence_always_upper=True, as_raw=True)
 
     vcf_reader = vcf.Reader(open(f"{in_vcf}"))
@@ -286,9 +301,9 @@ def vcf_renewer(in_vcf, out_vcf, ref="hg38", slippage=False, config=config):
             if sv_type == "INS":
                 alt = str(record.ALT[0])
                 if repeat_checker(alt[1:]):
-                    pat = re.compile(fr"{alt[0]}{alt[1] * 4}")
+                    pat = re.compile(rf"{alt[0]}{alt[1] * 4}")
                 else:
-                    pat = re.compile(fr"{alt[0]}{alt[1:] * 4}")
+                    pat = re.compile(rf"{alt[0]}{alt[1:] * 4}")
                 match = pat.match(genome_seq[chrm][pos - 1 : pos + 10])
                 if match:
                     is_slippage = True
@@ -299,9 +314,9 @@ def vcf_renewer(in_vcf, out_vcf, ref="hg38", slippage=False, config=config):
                 record.REF = genome_seq[chrm][pos - 1 : end]
                 ref = record.REF
                 if repeat_checker(ref[1:]):
-                    pat = re.compile(fr"{ref[0]}{ref[1] * 4}")
+                    pat = re.compile(rf"{ref[0]}{ref[1] * 4}")
                 else:
-                    pat = re.compile(fr"{ref[0]}{ref[1:] * 4}")
+                    pat = re.compile(rf"{ref[0]}{ref[1:] * 4}")
                 match = pat.match(genome_seq[chrm][pos - 1 : pos + 10])
                 if match:
                     is_slippage = True
@@ -323,38 +338,46 @@ def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref="hg38"):
         assembly = "GRCh37"
     elif ref == "hg38":
         assembly = "GRCh38"
-    # add --filter_common
+    elif ref == "mm39":
+        assembly = "GRCm39"
+    elif ref == "mm10":
+        assembly = "GRCm38"
 
-    rnd_id = random.getrandbits(42)
+    rnd_id = secrets.randbits(42)
     tmp_vcf = f"tmp.{rnd_id}.vcf"
+    if ref.startswith("hg"):
+        _af_gnomad = "--af_gnomad"
+    else:
+        _af_gnomad = ""
 
-    # vep_cmd = 'vep --cache --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
-    vep_cmd = "vep --offline --force_overwrite --assembly {} --input_file {} --format vcf --output_file {} \
-        --vcf --symbol --terms SO --af --af_gnomad --plugin Downstream --plugin Wildtype --no_stats".format(
-        assembly, in_vcf, tmp_vcf
-    )
+    vep_cmd = f"vep --offline --force_overwrite --assembly {assembly} --input_file {in_vcf} --format vcf --output_file {tmp_vcf} \
+        --vcf --symbol --terms SO --af {_af_gnomad} --plugin Downstream --plugin Wildtype --no_stats"
+
     ret = run_cmd(vep_cmd, "VEP begin annotation, VEP annotation finished!")
     flag = False
     if ret:
         status_message("VEP accomplished!")
         flag = True
-        # return True
     if flag:
         vcf_reader = vcf.Reader(open(f"{tmp_vcf}"))
+        csq_format = ScanNeo_utils.parse_csq_format(vcf_reader)
         vcf_writer = vcf.Writer(open(f"{out_vcf}", "w"), vcf_reader)
-        # Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Feature|BIOTYPE|EXON|INTRON|HGVSc|HGVSp|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|DISTANCE|STRAND|FLAGS|SYMBOL_SOURCE|HGNC_ID|AF|gnomAD_AF|gnomAD_AFR_AF|gnomAD_AMR_AF|gnomAD_ASJ_AF|gnomAD_EAS_AF|gnomAD_FIN_AF|gnomAD_NFE_AF|gnomAD_OTH_AF|gnomAD_SAS_AF|CLIN_SIG|SOMATIC|PHENO|DownstreamProtein|ProteinLengthChange|WildtypeProtein
         for record in vcf_reader:
-            transcript_one = record.INFO["CSQ"][0]
-            AF = (
-                float(transcript_one.split("|")[23])
-                if transcript_one.split("|")[23]
-                else 0.0
+            alleles_dict = ScanNeo_utils.resolve_alleles(record)
+            alt = record.ALT[0]
+            csq_allele = alleles_dict[alt]
+            transcripts = ScanNeo_utils.parse_csq_entries_for_allele(
+                record.INFO["CSQ"], csq_format, csq_allele
             )
-            gnomAD_AF = (
-                float(transcript_one.split("|")[24])
-                if transcript_one.split("|")[24]
-                else 0.0
-            )
+            transcript_one = transcripts[0]
+            AF = float(transcript_one["AF"]) if transcript_one["AF"] else 0.0
+            try:
+                gnomAD_AF = float(transcript_one["gnomAD_AF"])
+            except KeyError:
+                gnomAD_AF = 0.0
+            except ValueError:
+                gnomAD_AF = 0.0
+
             # vcf filtering allele frequency > 1% in 1000genomes or gnomAD database
             if AF > cutoff or gnomAD_AF > cutoff:
                 pass
@@ -666,7 +689,7 @@ def parse_args():
         action="store",
         dest="ref",
         help="reference genome (default: %(default)s)",
-        choices=["hg19", "hg38"],
+        choices=["hg19", "hg38", "mm39", "mm10"],
         default="hg38",
     )
 
@@ -704,7 +727,7 @@ def parse_args():
         action="store",
         dest="ref",
         help="reference genome (default: %(default)s)",
-        choices=["hg19", "hg38"],
+        choices=["hg19", "hg38", "mm39", "mm10"],
         default="hg38",
     )
     vcf_parser.add_argument(

@@ -4,6 +4,7 @@
 /.pytype/
 /dist/
 /old/
+/data/
 /docs/_build/
 /src/*.egg-info/
 __pycache__/

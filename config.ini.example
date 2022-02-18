@@ -2,11 +2,20 @@
 
 hg38=/home/usr/database/genome/hg38.fa
 hg19=/home/usr/database/genome/hg19.fa
+mm39=/home/usr/database/genome/mm39.fa
+mm10=/home/usr/database/genome/mm10.fa
 
 [annotation]
 
 hg38=/home/usr/database/gencode/gencode.v21.annotation.gtf
 hg19=/home/usr/database/gencode/gencode.v19.annotation.gtf
+mm39=/home/usr/database/gencode/gencode.vM27.annotation.gtf
+mm10=/home/usr/database/gencode/gencode.vM23.annotation.gtf
+
+[yara]
+
+index=/path/to/hla.index
+threads=8
 
 [yara]
 
