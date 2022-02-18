@@ -772,7 +772,7 @@ def parse_args():
         "--bam",
         action="store",
         dest="bam",
-        help="Input RNA-Seq BAM file if you don't know sample HLA class I alleles",
+        help="Input RNA-Seq BAM file if you don't know sample HLA class I alleles. Works for human only!",
     )
     hla_parser.add_argument(
         "-l",

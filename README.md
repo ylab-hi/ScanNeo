@@ -85,13 +85,16 @@ Or install them via conda
 `conda install -c conda-forge tcsh gawk`
 
 ### install VEP annotations and reference fasta
-For __Human genome__
+
+For **Human genome**
 
 ```
 vep_install -a cf -s homo_sapiens -y GRCh38 --CONVERT # hg38
 vep_install -a cf -s homo_sapiens -y GRCh37 --CONVERT # hg19
 ```
-For __Mouse genome__
+
+For **Mouse genome**
+
 ```
 vep_install -a cf -s mus_musculus -y GRCm39 --CONVERT # mm39
 vep_install -a cf -s mus_musculus -y GRCm38 --CONVERT # mm10
@@ -178,6 +181,8 @@ By executing this command, it will generate 12 files, namely,
 
 hg38=/path/to/hg38.fa
 hg19=/path/to/hg19.fa
+mm39=/path/to/mm39.fa
+mm10=/path/to/mm10.fa
 
 [annotation]
 
@@ -185,6 +190,9 @@ hg19=/path/to/hg19.fa
 
 hg38=/path/to/gencode.v21.annotation.gtf
 hg19=/path/to/gencode.v19.annotation.gtf
+mm39=/path/to/gencode.vM27.annotation.gtf
+mm10=/path/to/gencode.vM23.annotation.gtf
+
 
 [yara]
 
@@ -211,7 +219,7 @@ ScanNeo.py indel -i rnaseq_bam -r hg38
 -i INPUT, --input INPUT
                         RNA-seq alignment file (BAM)
 --mapq                  Remove reads with MAPQ = 0
--r {hg19,hg38}, --ref {hg19,hg38}
+-r {hg19,hg38,mm39,mm10}, --ref {hg19,hg38,mm39,mm10}
                         reference genome (default: hg38)
 ```
 
@@ -247,7 +255,7 @@ ScanNeo.py anno -i input_vcf_file -o output_annotated_vcf_file [options]
 -s, --slippage          Keep putative PCR slippage derived indels
 -d DIR, --dir DIR     Specify the VEP cache/plugin directory to use.
                         (default: $HOME/.vep/)
--r {hg19,hg38}, --ref {hg19,hg38}
+-r {hg19,hg38,mm39,mm10}, --ref {hg19,hg38,mm39,mm10}
                         reference genome (default: hg38)
 -o OUTPUT, --output OUTPUT
                         output annotated and filtered vcf file (default:
@@ -271,7 +279,8 @@ output_annotated_vcf_file   			:VEP annotated Indels with VCF format
 #### STEP 3: neoantigen prediction
 
 ```
-ScanNeo.py hla -i vep.vcf --alleles HLA-A*02:01,HLA-B*08:01,HLA-C*03:03 -e 8,9 -o output.tsv [options]
+ScanNeo.py hla -i vep.vcf --alleles HLA-A*02:01,HLA-B*08:01,HLA-C*03:03 -e 8,9 -o output.tsv [options] # for human
+ScanNeo.py hla -i vep.vcf --alleles H-2-Dd,H-2-Kk,H-2-Ld -e 8,9 -o output.tsv [options] # for mouse
 ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
 ```
 
@@ -283,7 +292,7 @@ ScanNeo.py hla -i vep.vcf -b RNA_seq.bam -e 8,9 -o output.tsv [options]
 --alleles ALLELES     Name of the allele to use for epitope prediction.
                         Multiple alleles can be specified using a comma-
                         separated listinput HLA class I alleles
--b BAM, --bam BAM     Input RNA-Seq BAM file if you don't know sample HLA class I alleles
+-b BAM, --bam BAM     Input RNA-Seq BAM file if you don't know sample HLA class I alleles. Works for human only!
 -l LENGTH, --length LENGTH
                          Length of the peptide sequence to use when creating
                          the FASTA (default: 21)
