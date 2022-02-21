@@ -407,4 +407,4 @@ Bug reports or feature requests can be submitted on the <a href="https://github.
 
 ## Citation
 
-Please cite out paper at [Bioinformatics](https://academic.oup.com/bioinformatics/article/35/20/4159/5384488).
+Please cite out paper at [Bioinformatics](https://academic.oup.com/bioinformatics/article/35/20/4159/5384488) and [STAR Protocols](https://star-protocols.cell.com/protocols/977).
