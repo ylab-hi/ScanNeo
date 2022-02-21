@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/ylab-hi/ScanNeo.svg?branch=master&status=passed)](https://travis-ci.org/ylab-hi/ScanNeo)
 
+:fire:__NEW__:fire: ScanNeo supports both human and mouse genome.
+
 ## Introduction
 
 A pipeline for identifying indel derived neoantigens using RNA-Seq data
