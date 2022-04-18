@@ -25,15 +25,23 @@ def config_getter():
     config.read(config_default)
     hg38_ref = config.get("fasta", "hg38")
     hg19_ref = config.get("fasta", "hg19")
+    mm10_ref = config.get("fasta", "mm10")
+    mm39_ref = config.get("fasta", "mm39")
     hg38_anno = config.get("annotation", "hg38")
     hg19_anno = config.get("annotation", "hg19")
+    mm10_anno = config.get("annotation", "mm10")
+    mm39_anno = config.get("annotation", "mm39")
     yara_index = config.get("yara", "index")
     threads = config.get("yara", "threads")
     return {
         "hg38_ref": hg38_ref,
         "hg19_ref": hg19_ref,
+        "mm10_ref": mm10_ref,
+        "mm39_ref": mm39_ref,
         "hg38_anno": hg38_anno,
         "hg19_anno": hg19_anno,
+        "mm10_anno": mm10_anno,
+        "mm39_anno": mm39_anno,
         "yara_index": yara_index,
         "threads": threads,
     }
