@@ -333,7 +333,8 @@ def vcf_renewer(in_vcf, out_vcf, ref="hg38", slippage=False, config=config):
     status_message("VCF add sequences [ref, alt] accomplished!")
 
 
-def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref="hg38"):
+def vep_caller(in_vcf, out_vcf, vep_folder, cutoff=0.01, ref="hg38"):
+    home = str(Path.home())
     if ref == "hg19":
         assembly = "GRCh37"
     elif ref == "hg38":
@@ -352,7 +353,12 @@ def vep_caller(in_vcf, out_vcf, cutoff=0.01, ref="hg38"):
         _af_gnomad = ""
         _species = "mus_musculus"
 
-    vep_cmd = f"vep --offline --force_overwrite --species {_species} --assembly {assembly} --input_file {in_vcf} --format vcf --output_file {tmp_vcf} \
+    if vep_folder:
+        _vep_folder = f"--dir {vep_folder}"
+    else:
+        _vep_folder = f"--dir {home}/.vep/"
+
+    vep_cmd = f"vep --offline --force_overwrite {_vep_folder} --species {_species} --assembly {assembly} --input_file {in_vcf} --format vcf --output_file {tmp_vcf} \
         --vcf --symbol --terms SO --af {_af_gnomad} --plugin Downstream --plugin Wildtype --no_stats"
 
     ret = run_cmd(vep_cmd, "VEP begin annotation, VEP annotation finished!")
@@ -658,6 +664,7 @@ def reference_proteome_filter(in_file):
 
 
 def parse_args():
+    home = str(Path.home())
     parser = argparse.ArgumentParser(
         description="ScanNeo pipeline: neoantigen identification using RNA-seq data",
         epilog=textwrap.dedent(
@@ -719,6 +726,14 @@ def parse_args():
         help="MAF cutoff default: %(default)s",
         type=float,
         default=0.01,
+    )
+    vcf_parser.add_argument(
+        "-d",
+        "--dir",
+        action="store",
+        dest="dir",
+        help="Specify the VEP cache/plugin directory to use. default: %(default)s",
+        default=f"{home}/.vep/",
     )
     vcf_parser.add_argument(
         "-s", "--slippage", action="store_true", dest="slippage", help="Keep slippage"
@@ -902,11 +917,18 @@ def main():
         scansv_caller(bwa_bam, ref=args.ref)
     elif args.sub_command == "anno":
         out_vcf = args.output
+        vep_folder = args.dir
         pre_vcf = f"pre_vep.{os.getpid()}.vcf"
         vcf_renewer(
             in_vcf=args.input, out_vcf=pre_vcf, ref=args.ref, slippage=args.slippage
         )
-        vep_caller(in_vcf=pre_vcf, out_vcf=out_vcf, ref=args.ref, cutoff=args.cutoff)
+        vep_caller(
+            in_vcf=pre_vcf,
+            out_vcf=out_vcf,
+            vep_folder=vep_folder,
+            ref=args.ref,
+            cutoff=args.cutoff,
+        )
         remove(pre_vcf)
     elif args.sub_command == "hla":
         flag = False
