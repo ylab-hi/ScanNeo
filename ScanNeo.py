@@ -211,7 +211,7 @@ def scansv_caller(in_bam, ref="hg38", config=config):
         annotation = config["hg19_anno"]
     elif ref == "mm39":
         fasta = config["mm39_ref"]
-        annotation = config["hg39_anno"]
+        annotation = config["mm39_anno"]
     elif ref == "mm10":
         fasta = config["mm10_ref"]
         annotation = config["mm10_anno"]
