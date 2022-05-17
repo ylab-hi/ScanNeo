@@ -48,7 +48,7 @@ conda install -c bioconda tabix
 conda install -c conda-forge coincbc
 conda install -c conda-forge pyomo
 conda install -c bioconda pyfaidx
-conda install -c bioconda pyvcf
+conda install -c conda-forge pyvcf
 conda install -c anaconda hdf5
 ```
 
