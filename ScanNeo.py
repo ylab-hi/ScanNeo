@@ -372,7 +372,7 @@ def vep_caller(in_vcf, out_vcf, vep_folder, cutoff=0.01, ref="hg38"):
         vcf_writer = vcf.Writer(open(f"{out_vcf}", "w"), vcf_reader)
         for record in vcf_reader:
             alleles_dict = ScanNeo_utils.resolve_alleles(record)
-            alt = record.ALT[0]
+            alt = str(record.ALT[0])
             csq_allele = alleles_dict[alt]
             transcripts = ScanNeo_utils.parse_csq_entries_for_allele(
                 record.INFO["CSQ"], csq_format, csq_allele
