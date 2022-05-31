@@ -297,7 +297,7 @@ def vcf_renewer(in_vcf, out_vcf, ref="hg38", slippage=False, config=config):
         chrm = record.CHROM
         pos = record.POS
         end = record.INFO["END"]
-        if chrm in chrms:
+        if chrm in chrms or chrm in chrms_dict:
             if sv_type == "INS":
                 alt = str(record.ALT[0])
                 if repeat_checker(alt[1:]):
