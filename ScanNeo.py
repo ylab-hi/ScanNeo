@@ -377,6 +377,8 @@ def vep_caller(in_vcf, out_vcf, vep_folder, cutoff=0.01, ref="hg38"):
             transcripts = ScanNeo_utils.parse_csq_entries_for_allele(
                 record.INFO["CSQ"], csq_format, csq_allele
             )
+            if not transcripts:
+                continue
             transcript_one = transcripts[0]
             AF = float(transcript_one["AF"]) if transcript_one["AF"] else 0.0
             try:
