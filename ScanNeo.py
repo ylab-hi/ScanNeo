@@ -297,7 +297,7 @@ def vcf_renewer(in_vcf, out_vcf, ref="hg38", slippage=False, config=config):
         chrm = record.CHROM
         pos = record.POS
         end = record.INFO["END"]
-        if chrm in chrms:
+        if chrm in chrms or chrm in chrms_dict:
             if sv_type == "INS":
                 alt = str(record.ALT[0])
                 if repeat_checker(alt[1:]):
@@ -372,11 +372,13 @@ def vep_caller(in_vcf, out_vcf, vep_folder, cutoff=0.01, ref="hg38"):
         vcf_writer = vcf.Writer(open(f"{out_vcf}", "w"), vcf_reader)
         for record in vcf_reader:
             alleles_dict = ScanNeo_utils.resolve_alleles(record)
-            alt = record.ALT[0]
+            alt = str(record.ALT[0])
             csq_allele = alleles_dict[alt]
             transcripts = ScanNeo_utils.parse_csq_entries_for_allele(
                 record.INFO["CSQ"], csq_format, csq_allele
             )
+            if not transcripts:
+                continue
             transcript_one = transcripts[0]
             AF = float(transcript_one["AF"]) if transcript_one["AF"] else 0.0
             try:
